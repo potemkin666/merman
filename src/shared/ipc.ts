@@ -27,6 +27,8 @@ export const IPC_CHANNELS = {
   TERMINAL_KILL: 'terminal-kill',
   TERMINAL_OUTPUT: 'terminal-output',
   TERMINAL_EXIT: 'terminal-exit',
+  GET_TASKS: 'get-tasks',
+  ADD_TASK: 'add-task',
   GET_HABIT_SUGGESTION: 'get-habit-suggestion',
   SERVICE_HEARTBEAT: 'service-heartbeat',
 } as const

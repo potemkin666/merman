@@ -9,6 +9,7 @@ import { spawnTerminal, writeTerminal, resizeTerminal, killTerminal } from './se
 import { getConfig, setConfig } from './services/configService'
 import { getApiKey, setApiKey, isSecureStorageAvailable } from './services/keychainService'
 import { getLogs, addLog, initLogStore, exportLogs, flushLogs } from './services/logService'
+import { getTasks, addTask as addTaskToStore, initTaskStore, flushTasks } from './services/taskService'
 import { translateError } from './services/translateError'
 import { initHabitStore, recordDispatch, getSuggestion } from './services/habitService'
 
@@ -65,6 +66,7 @@ function createWindow(): void {
 app.whenReady().then(() => {
   const userData = app.getPath('userData')
   initLogStore(userData)
+  initTaskStore(userData)
   initHabitStore(userData)
   createWindow()
   app.on('activate', () => {
@@ -79,6 +81,7 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
   stopHeartbeat()
   flushLogs()
+  flushTasks()
   if (serviceRun) {
     killProcess(serviceRun.process)
     serviceRun = null
@@ -346,6 +349,14 @@ ipcMain.handle(IPC_CHANNELS.TERMINAL_KILL, async () => {
   killTerminal()
   addLog('info', 'Terminal session ended')
   return { ok: true }
+})
+
+// --- Task persistence ---
+
+ipcMain.handle(IPC_CHANNELS.GET_TASKS, () => getTasks())
+
+ipcMain.handle(IPC_CHANNELS.ADD_TASK, (_event, task) => {
+  return addTaskToStore(task)
 })
 
 // --- Habit suggestion ---
