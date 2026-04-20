@@ -2,7 +2,9 @@
 
 > *An offline desktop companion for OpenClaw — elegant, oceanic, and built for non-technical users.*
 
-![Harbor Dashboard](docs/screenshots/placeholder-harbor.png)
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/6ee9e92a-9d29-4686-ab07-7c23c0865ff5" alt="The Emissary" width="300" />
+</p>
 
 ---
 
