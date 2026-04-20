@@ -272,12 +272,7 @@ export const DeepDive: React.FC<DeepDiveProps> = ({ config }) => {
               <button
                 onClick={handleSurface}
                 aria-label="End terminal session"
-                className="deep-dive__btn"
-                style={{
-                  background: 'var(--color-warning)',
-                  color: '#0a0f1e',
-                  cursor: 'pointer',
-                }}
+                className="deep-dive__btn deep-dive__btn--surface"
               >
                 🏊 Surface
               </button>

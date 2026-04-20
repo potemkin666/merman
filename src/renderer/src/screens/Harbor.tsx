@@ -70,12 +70,12 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
       {/* First-time nudge */}
       {needsSetup && (
         <div className="nudge-banner">
-          <div style={{ fontSize: 32 }}>👋</div>
-          <div style={{ flex: 1 }}>
-            <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-primary)', marginBottom: 4 }}>
+          <div className="nudge-banner__icon">👋</div>
+          <div className="nudge-banner__body">
+            <p className="nudge-banner__title">
               Looks like you have not set up yet!
             </p>
-            <p style={{ fontSize: 13, color: 'var(--color-text-muted)', lineHeight: 1.6 }}>
+            <p className="nudge-banner__text">
               No worries — click the button below and the Setup Wizard will walk you through
               everything step by step. It only takes a minute.
             </p>

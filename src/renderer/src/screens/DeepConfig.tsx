@@ -244,11 +244,11 @@ export const DeepConfig: React.FC<DeepConfigProps> = ({ config, onSave }) => {
       </section>
 
       <section className="deep-config__section">
-        <h2 className="deep-config__section-title" style={{ display: 'flex', alignItems: 'center' }}>
+        <h2 className="deep-config__section-title deep-config__section-title--flex">
           Saved Presets
           <HelpHint text="Presets are shortcuts for different task types. Each preset has a name and a 'mode' that tells the agent how to behave. You can create your own or use the built-in ones." />
         </h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+        <div className="deep-config__preset-list">
           {form.presets.map((p) => (
             <div key={p.id} className="deep-config__preset-item">
               <span className="deep-config__preset-name">{p.name}</span>

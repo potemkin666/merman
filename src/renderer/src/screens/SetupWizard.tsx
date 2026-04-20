@@ -182,9 +182,9 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
       <div className="setup-wizard__content">
         {step === 0 && (
           <div>
-            <div style={{ fontSize: 40, marginBottom: 16 }}>🔱</div>
+            <div className="setup-wizard__big-icon">🔱</div>
             <h2 className="setup-wizard__step-heading--no-flex">Welcome to OpenClaw Harbour</h2>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: 14, lineHeight: 1.8 }}>
+            <p className="setup-wizard__body-text">
               This wizard will prepare your computer for OpenClaw in just a few steps.
             </p>
             <div className="setup-wizard__info-box">
@@ -224,11 +224,11 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
                   <div key={r.name} className="setup-wizard__env-result" style={{
                     border: r.ok ? '1px solid transparent' : '1px solid rgba(232,93,93,0.2)',
                   }}>
-                    <span style={{ flexShrink: 0 }}>{r.ok ? '✅' : '❌'}</span>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <span style={{ fontWeight: 600, fontSize: 13 }}>{r.name}</span>
-                        {r.version && <span style={{ color: 'var(--color-text-muted)', fontSize: 11 }}>v{r.version}</span>}
+                    <span className="setup-wizard__env-result-icon">{r.ok ? '✅' : '❌'}</span>
+                    <div className="setup-wizard__env-result-body">
+                      <div className="setup-wizard__env-result-header">
+                        <span className="setup-wizard__env-result-name">{r.name}</span>
+                        {r.version && <span className="setup-wizard__env-result-version">v{r.version}</span>}
                       </div>
                       {r.message && (
                         <p style={{
@@ -277,7 +277,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
               aria-label="OpenClaw directory path"
               className="input"
             />
-            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <div className="setup-wizard__browse-actions">
               <Tooltip text="Open a folder picker to select the OpenClaw directory. Easier than typing!">
                 <button
                   onClick={async () => {
@@ -341,7 +341,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
             {/* Live install progress */}
             {installing && (
               <div style={{ marginTop: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                <div className="setup-wizard__install-progress">
                   <span style={{ fontSize: 18, animation: 'pulse 1.5s infinite' }}>⏳</span>
                   <span style={{ fontSize: 14, color: 'var(--color-primary)', fontWeight: 600 }}>
                     Installing... ({Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, '0')} elapsed)
@@ -410,9 +410,9 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
 
         {step === 4 && (
           <div>
-            <div style={{ fontSize: 40, marginBottom: 16 }}>🎉</div>
+            <div className="setup-wizard__big-icon">🎉</div>
             <h2 className="setup-wizard__step-heading--no-flex">Setup Complete!</h2>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: 14, lineHeight: 1.8 }}>
+            <p className="setup-wizard__body-text">
               You are all set! Here is what to do next:
             </p>
             <ol style={{ paddingLeft: 20, fontSize: 14, color: 'var(--color-text-muted)', lineHeight: 2.2, marginTop: 12 }}>
