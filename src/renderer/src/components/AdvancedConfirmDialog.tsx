@@ -1,5 +1,6 @@
 import React from 'react'
 import { Modal } from './Modal'
+import { useConfig } from '../hooks/useConfig'
 
 interface AdvancedConfirmDialogProps {
   open: boolean
@@ -20,6 +21,8 @@ export const AdvancedConfirmDialog: React.FC<AdvancedConfirmDialogProps> = ({
   onConfirm,
   onCancel,
 }) => {
+  const { config } = useConfig()
+  const name = config.emissaryName || 'Azurel'
   return (
     <Modal open={open} title="⚠️ Advanced Custom — No Guardrails" onClose={onCancel}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -34,7 +37,7 @@ export const AdvancedConfirmDialog: React.FC<AdvancedConfirmDialogProps> = ({
             ⚠️ This mode has no safety limits
           </p>
           <p style={{ fontSize: 12, color: 'var(--color-text-muted)', lineHeight: 1.6 }}>
-            Advanced Custom gives the emissary full control with no guardrails.
+            Advanced Custom gives {name} full control with no guardrails.
             The agent may execute arbitrary commands, modify files, or make
             network requests without restriction. Make sure you understand what
             your prompt is asking for before proceeding.

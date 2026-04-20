@@ -116,7 +116,7 @@ export function getClickResponse(status: ServiceStatus, recentTasks: TaskResult[
       'You keep poking the glass. I am trying to concentrate.',
       '*sighs dramatically* Yes? Again?',
       'If you click me one more time I am going back to the Mariana Trench.',
-      'I am a professional emissary, not a stress ball.',
+      'I am a professional, not a stress ball.',
       '*gives you The Look*',
       'Into the Mariana Trench? Again? I just got my scales polished...',
     ]
@@ -176,7 +176,7 @@ export function getClickResponse(status: ServiceStatus, recentTasks: TaskResult[
 
   if (totalDone === 0 && recentTasks.length === 0) {
     const fresh = [
-      'Hello! I am your emissary. Click "Dispatch" in the sidebar to send me on a task!',
+      'Hello! I am your emissary — click "Dispatch" in the sidebar to send me on a task!',
       'New around here? Head to Setup first, then Dispatch to give me something to do.',
       'I am ready for my first mission! Just say the word.',
       '*waves enthusiastically* A new commander! I will not disappoint.',

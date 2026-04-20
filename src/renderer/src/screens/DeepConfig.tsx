@@ -136,6 +136,24 @@ export const DeepConfig: React.FC<DeepConfigProps> = ({ config, onSave }) => {
 
       <section style={{ marginBottom: 28 }}>
         <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, color: 'var(--color-text)' }}>
+          Emissary
+        </h2>
+        <div>
+          <label style={labelStyle}>
+            Emissary Name
+            <HelpHint text="Give your emissary a name! This name appears throughout the app — in status messages, tooltips, the Fishtank, and more. Default is 'Azurel'." />
+          </label>
+          <input type="text" value={form.emissaryName}
+            onChange={(e) => setForm((f) => ({ ...f, emissaryName: e.target.value }))}
+            placeholder="Azurel" aria-label="Emissary name" style={inputStyle} />
+          <p style={{ marginTop: 6, fontSize: 11, color: 'var(--color-text-muted)' }}>
+            🧜‍♂️ Your emissary will introduce himself as <strong style={{ color: 'var(--color-primary)' }}>{form.emissaryName || 'Azurel'}</strong> throughout the app.
+          </p>
+        </div>
+      </section>
+
+      <section style={{ marginBottom: 28 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, color: 'var(--color-text)' }}>
           Paths
         </h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

@@ -44,13 +44,14 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
   }
 
   const isRunning = status === 'running'
+  const name = config.emissaryName || 'Azurel'
   const statusCopy = isRunning
-    ? '⚡ The emissary stirs in the depths.'
+    ? `⚡ ${name} stirs in the depths.`
     : status === 'stopped'
-    ? '💤 The emissary has returned to the deep.'
+    ? `💤 ${name} has returned to the deep.`
     : status === 'error'
     ? '🌊 The waters are unstable. Check Deep Config for your settings.'
-    : '🔱 The emissary is awaiting your command.'
+    : `🔱 ${name} is awaiting your command.`
 
   const allOk = envResults.length > 0 && envResults.every((r) => r.ok)
   const failCount = envResults.filter((r) => !r.ok).length
@@ -169,7 +170,7 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
 
       <h2 style={{ fontSize: 16, fontWeight: 600, color: 'var(--color-text)', marginBottom: 16, display: 'flex', alignItems: 'center' }}>
         Messages in Bottles
-        <HelpHint text="These are tasks you have sent to the emissary. Each bottle holds a past dispatch. Click one to uncork it and read the results. Cracked bottles mean something went wrong." />
+        <HelpHint text={`These are tasks you have sent to ${name}. Each bottle holds a past dispatch. Click one to uncork it and read the results. Cracked bottles mean something went wrong.`} />
       </h2>
       {recentTasks.length === 0 ? (
         <div className="empty-state">

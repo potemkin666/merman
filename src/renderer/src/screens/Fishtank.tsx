@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import type { ServiceStatus, TaskResult } from '../../../shared/types'
 import { useIpc } from '../hooks/useIpc'
+import { useConfig } from '../hooks/useConfig'
 import { IPC_CHANNELS } from '../../../shared/ipc'
 import { SeabedCanvas } from '../components/SeabedCanvas'
 import {
@@ -38,6 +39,8 @@ interface FishtankProps {
 
 export const Fishtank: React.FC<FishtankProps> = ({ status, recentTasks = [], onWorkspacePathSet, onFilesAttached }) => {
   const { invoke } = useIpc()
+  const { config } = useConfig()
+  const name = config.emissaryName || 'Azurel'
   const [animation, setAnimation] = useState<EmissaryAnimation>('floating')
   const [saying, setSaying] = useState('')
   const [sayingKey, setSayingKey] = useState(0)
@@ -234,9 +237,9 @@ export const Fishtank: React.FC<FishtankProps> = ({ status, recentTasks = [], on
         The Fishtank
       </h1>
       <p className="screen-subtitle">
-        🐠 Peer into the depths and see what the emissary is up to.
+        🐠 Peer into the depths and see what {name} is up to.
         <span className="fishtank-drop-hint">
-          Drop files or folders here — the emissary will catch them!
+          Drop files or folders here — {name} will catch them!
         </span>
       </p>
 
@@ -251,7 +254,7 @@ export const Fishtank: React.FC<FishtankProps> = ({ status, recentTasks = [], on
       <div
         ref={tankRef}
         role="img"
-        aria-label={`Fishtank: the emissary is ${ANIMATION_LABELS[animation].toLowerCase()}. Status: ${getStatusText(status)}. Weather: ${weather}. You can drag and drop files here.`}
+        aria-label={`Fishtank: ${name} is ${ANIMATION_LABELS[animation].toLowerCase()}. Status: ${getStatusText(status)}. Weather: ${weather}. You can drag and drop files here.`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -273,7 +276,7 @@ export const Fishtank: React.FC<FishtankProps> = ({ status, recentTasks = [], on
         {dragOver && (
           <div className="fishtank-drag-overlay">
             <div className="fishtank-drag-label">
-              🎣 Drop here — the emissary is ready to catch!
+              🎣 Drop here — {name} is ready to catch!
             </div>
           </div>
         )}
@@ -370,7 +373,7 @@ export const Fishtank: React.FC<FishtankProps> = ({ status, recentTasks = [], on
           onClick={handleEmissaryClick}
           role="button"
           tabIndex={0}
-          aria-label="Click the emissary to interact"
+          aria-label={`Click ${name} to interact`}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleEmissaryClick() } }}
           className="fishtank-emissary"
           style={emissaryStyle}
@@ -388,7 +391,7 @@ export const Fishtank: React.FC<FishtankProps> = ({ status, recentTasks = [], on
         </div>
 
         {/* Speech bubble */}
-        <div key={sayingKey} aria-live="polite" aria-label="Emissary says" className="fishtank-speech">
+        <div key={sayingKey} aria-live="polite" aria-label={`${name} says`} className="fishtank-speech">
           <p className="fishtank-speech-text" style={{
             fontStyle: saying.startsWith('*') ? 'italic' : 'normal',
             opacity: saying.startsWith('*') ? 0.85 : 1,

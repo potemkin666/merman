@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { LogPanel } from '../components/LogPanel'
 import { Tooltip } from '../components/Tooltip'
 import { HelpHint } from '../components/Tooltip'
+import { useConfig } from '../hooks/useConfig'
 import type { LogEntry } from '../../../shared/types'
 
 interface TideLogProps {
@@ -11,6 +12,8 @@ interface TideLogProps {
 type Filter = 'all' | LogEntry['level']
 
 export const TideLog: React.FC<TideLogProps> = ({ logs }) => {
+  const { config } = useConfig()
+  const name = config.emissaryName || 'Azurel'
   const [filter, setFilter] = useState<Filter>('all')
   const [rawMode, setRawMode] = useState(false)
 
@@ -32,7 +35,7 @@ export const TideLog: React.FC<TideLogProps> = ({ logs }) => {
     <div className="screen-page--flex">
       <h1 className="screen-title" style={{ display: 'flex', alignItems: 'center' }}>
         Tide Log
-        <HelpHint text="This is the activity log. Everything the app and the emissary do gets recorded here. Think of it like a diary of events. If something goes wrong, this is the first place to look." />
+        <HelpHint text={`This is the activity log. Everything the app and ${name} do gets recorded here. Think of it like a diary of events. If something goes wrong, this is the first place to look.`} />
       </h1>
       <p className="screen-subtitle">
         🌊 The currents of activity, recorded. Newest entries are at the bottom.

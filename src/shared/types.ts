@@ -4,6 +4,7 @@ export interface AppConfig {
   model: string
   provider: string
   apiKey: string
+  emissaryName: string
   presets: Preset[]
   welcomeSeen?: boolean
 }

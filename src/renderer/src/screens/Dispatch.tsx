@@ -53,12 +53,14 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
       .map((p: Preset) => ({ value: p.mode, label: p.name, hint: p.description || '' })),
   ]
 
+  const name = config.emissaryName || 'Azurel'
+
   const getStatusCopy = () => {
     if (cancelling) return '🛑 Cancelling the task...'
-    if (dispatching) return `🌊 The emissary has been dispatched! He is working on it... (${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')} elapsed)`
+    if (dispatching) return `🌊 ${name} has been dispatched! He is working on it... (${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')} elapsed)`
     if (result && !result.ok) return '⚠️ Something went wrong. Read the explanation below — it will tell you what to do.'
-    if (result?.ok) return '🔱 The emissary has returned with results! Scroll down to see them.'
-    return '🔱 Tell the emissary what you need. Type it in plain English below — no special format needed.'
+    if (result?.ok) return `🔱 ${name} has returned with results! Scroll down to see them.`
+    return `🔱 Tell ${name} what you need. Type it in plain English below — no special format needed.`
   }
 
   const handleCancel = async () => {
@@ -149,9 +151,9 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Describe the task for the emissary... For example: &quot;Write me a short email thanking my team for their hard work this week&quot;"
+          placeholder={`Describe the task for ${name}... For example: "Write me a short email thanking my team for their hard work this week"`}
           rows={6}
-          aria-label="Task instruction for the emissary"
+          aria-label={`Task instruction for ${name}`}
           className="input input--textarea"
         />
 
@@ -174,11 +176,11 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
             </select>
           </div>
 
-          <Tooltip text={dispatching ? 'The emissary is already working on something. Please wait.' : !prompt.trim() ? 'Type an instruction first, then click here to send it.' : 'Click to send this task to the emissary. He will dive into the depths and return with results.'}>
+          <Tooltip text={dispatching ? `${name} is already working on something. Please wait.` : !prompt.trim() ? 'Type an instruction first, then click here to send it.' : `Click to send this task to ${name}. He will dive into the depths and return with results.`}>
             <button
               onClick={handleDispatch}
               disabled={dispatching || !prompt.trim()}
-              aria-label={dispatching ? 'Dispatching task' : 'Dispatch task to emissary'}
+              aria-label={dispatching ? 'Dispatching task' : `Dispatch task to ${name}`}
               style={{
                 marginTop: 20,
                 padding: '10px 28px',
@@ -192,11 +194,11 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
                 whiteSpace: 'nowrap',
               }}
             >
-              {dispatching ? `⏳ Dispatching... (${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')})` : '🔱 Dispatch Emissary'}
+              {dispatching ? `⏳ Dispatching... (${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')})` : `🔱 Dispatch ${name}`}
             </button>
           </Tooltip>
           {dispatching && (
-            <Tooltip text="Cancel the current task. The emissary will return immediately.">
+            <Tooltip text={`Cancel the current task. ${name} will return immediately.`}>
               <button
                 onClick={handleCancel}
                 disabled={cancelling}
@@ -242,7 +244,7 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
       {result && !result.ok && (
         <div className="card" style={{ borderColor: 'rgba(232,93,93,0.3)', padding: 20 }}>
           <h3 style={{ fontSize: 13, fontWeight: 600, marginBottom: 12, color: 'var(--color-error)' }}>
-            ❌ The emissary returned empty-handed
+            ❌ {name} returned empty-handed
           </h3>
           {result.explanation ? (
             <div style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 12 }}>

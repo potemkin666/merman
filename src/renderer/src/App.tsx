@@ -67,7 +67,7 @@ function AppContent() {
       }}>
         <div style={{ fontSize: 56, animation: 'emissaryFloat 3s ease-in-out infinite' }} aria-hidden="true">🔱</div>
         <p style={{ color: 'var(--color-primary)', fontSize: 18, fontWeight: 600 }}>OpenClaw Harbour</p>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: 14 }}>Your merman emissary awaits.</p>
+        <p style={{ color: 'var(--color-text-muted)', fontSize: 14 }}>Your emissary awaits.</p>
       </div>
     )
   }

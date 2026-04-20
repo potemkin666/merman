@@ -1,56 +1,62 @@
 import React, { useState } from 'react'
+import { useConfig } from '../hooks/useConfig'
 
 interface WelcomeOverlayProps {
   onDismiss: () => void
 }
 
-const steps = [
-  {
-    emoji: '🔱',
-    title: 'Welcome to OpenClaw Harbour',
-    body: `This app helps you control OpenClaw — an AI agent that can do tasks on your computer.
+function buildSteps(name: string) {
+  return [
+    {
+      emoji: '🔱',
+      title: 'Welcome to OpenClaw Harbour',
+      body: `This app helps you control OpenClaw — an AI agent that can do tasks on your computer.
 
 Think of it like having a very capable assistant. You tell it what to do, it goes and does it, then comes back with results.
 
 You don't need to know how to code. This app handles all the technical bits.`,
-  },
-  {
-    emoji: '🧜‍♂️',
-    title: 'Meet your emissary',
-    body: `Your emissary is an AI agent — a program that can understand instructions in plain English, then carry them out.
+    },
+    {
+      emoji: '🧜‍♂️',
+      title: `Meet ${name}`,
+      body: `${name} is an AI agent — a program that can understand instructions in plain English, then carry them out.
 
 "Agent" just means "a program that can make decisions and take actions on its own."
 
-You write what you want. The emissary figures out how to do it.
+You write what you want. ${name} figures out how to do it.
 
 (You can watch him work in the Fishtank!)`,
-  },
-  {
-    emoji: '🗺️',
-    title: 'Here is how this works',
-    body: `1. First, run the Setup Wizard — it checks your computer is ready
+    },
+    {
+      emoji: '🗺️',
+      title: 'Here is how this works',
+      body: `1. First, run the Setup Wizard — it checks your computer is ready
 2. Point the app at your OpenClaw folder
 3. Hit "Summon" on the Harbour to start the service
 4. Go to Dispatch and type what you want done
-5. The emissary dives in and brings back results
+5. ${name} dives in and brings back results
 
 That is it. No command line needed.`,
-  },
-  {
-    emoji: '🏠',
-    title: 'Quick tour of the sidebar',
-    body: `🏠 Harbour — Your home base. See status, start/stop the service.
+    },
+    {
+      emoji: '🏠',
+      title: 'Quick tour of the sidebar',
+      body: `🏠 Harbour — Your home base. See status, start/stop the service.
 ⚙️ Setup — Guided walkthrough to get everything ready.
-🔱 Dispatch — Send tasks to the emissary.
-🐠 Fishtank — Watch the emissary work (it is fun).
+🔱 Dispatch — Send tasks to ${name}.
+🐠 Fishtank — Watch ${name} work (it is fun).
 🌊 Tide Log — See what happened, in plain English.
 🔧 Deep Config — Change settings if you need to.
 
 Hover over any button for an explanation of what it does.`,
-  },
-]
+    },
+  ]
+}
 
 export const WelcomeOverlay: React.FC<WelcomeOverlayProps> = ({ onDismiss }) => {
+  const { config } = useConfig()
+  const name = config.emissaryName || 'Azurel'
+  const steps = buildSteps(name)
   const [step, setStep] = useState(0)
   const current = steps[step]
   const isLast = step === steps.length - 1

@@ -59,7 +59,7 @@ const NARRATIONS: Array<{ pattern: RegExp; lines: string[] }> = [
   ]},
   { pattern: /^\s*grep/, lines: [
     'Searching the depths for your pattern...',
-    'The emissary scours every crevice.',
+    'Scouring every crevice for matches.',
   ]},
   { pattern: /^\s*clear/, lines: [
     'Clearing the waters... fresh start.',
@@ -90,7 +90,7 @@ function getNarration(input: string): string | null {
   // Generic narration for unknown commands
   const generic = [
     `Executing "${trimmed.split(' ')[0]}"... let us see what the deep returns.`,
-    'An unfamiliar command, but the emissary presses on.',
+    'An unfamiliar command, but onward we go.',
     'Into unknown waters we go...',
     'The deep does not recognise this, but we try anyway.',
   ]
@@ -100,6 +100,7 @@ function getNarration(input: string): string | null {
 export const DeepDive: React.FC<DeepDiveProps> = ({ config }) => {
   const { invoke } = useIpc()
   const terminalRef = useRef<HTMLDivElement>(null)
+  const name = config.emissaryName || 'Azurel'
   const termRef = useRef<Terminal | null>(null)
   const fitAddonRef = useRef<FitAddon | null>(null)
   const [isRunning, setIsRunning] = useState(false)
@@ -115,7 +116,7 @@ export const DeepDive: React.FC<DeepDiveProps> = ({ config }) => {
   // Terminal exit listener
   useIpcListener(IPC_CHANNELS.TERMINAL_EXIT, () => {
     setIsRunning(false)
-    setNarration('The deep dive has ended. The emissary has returned to shore.')
+    setNarration(`The deep dive has ended. ${name} has returned to shore.`)
     termRef.current?.write('\r\n\x1b[36m[Session ended]\x1b[0m\r\n')
   }, [])
 
@@ -210,7 +211,7 @@ export const DeepDive: React.FC<DeepDiveProps> = ({ config }) => {
     const result = await invoke<CommandResult>(IPC_CHANNELS.TERMINAL_SPAWN, cwd)
     if (result.ok) {
       setIsRunning(true)
-      setNarration('The deep dive begins. Type commands and the emissary will narrate your journey.')
+      setNarration(`The deep dive begins. Type commands and ${name} will narrate your journey.`)
       // Focus the terminal
       setTimeout(() => {
         termRef.current?.focus()
@@ -237,7 +238,7 @@ export const DeepDive: React.FC<DeepDiveProps> = ({ config }) => {
         Deep Dive
       </h1>
       <p style={{ color: 'var(--color-text-muted)', marginBottom: 16, fontSize: 14 }}>
-        🤿 A real shell session inside your OpenClaw directory — narrated by the emissary.
+        🤿 A real shell session inside your OpenClaw directory — narrated by {name}.
       </p>
 
       {/* Emissary narration bar */}

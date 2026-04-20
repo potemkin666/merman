@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { BottleCard } from './BottleCard'
 import { Modal } from './Modal'
+import { useConfig } from '../hooks/useConfig'
 import type { TaskResult } from '../../../shared/types'
 
 interface BottleGridProps {
@@ -8,6 +9,8 @@ interface BottleGridProps {
 }
 
 export const BottleGrid: React.FC<BottleGridProps> = ({ tasks }) => {
+  const { config } = useConfig()
+  const name = config.emissaryName || 'Azurel'
   const [selectedTask, setSelectedTask] = useState<TaskResult | null>(null)
 
   return (
@@ -108,7 +111,7 @@ export const BottleGrid: React.FC<BottleGridProps> = ({ tasks }) => {
                 }}
               >
                 <p style={{ fontSize: 12, color: 'var(--color-error)', marginBottom: 6, fontWeight: 600 }}>
-                  ❌ The emissary returned empty-handed
+                  ❌ {name} returned empty-handed
                 </p>
                 <p style={{ fontSize: 13, color: 'var(--color-text-muted)', lineHeight: 1.6 }}>
                   This task encountered an error. Check the Tide Log for details about what went wrong.
@@ -118,7 +121,7 @@ export const BottleGrid: React.FC<BottleGridProps> = ({ tasks }) => {
 
             {selectedTask.status === 'running' && (
               <p style={{ fontSize: 13, color: 'var(--color-primary)' }}>
-                🌊 The emissary is still working on this task...
+                🌊 {name} is still working on this task...
               </p>
             )}
           </div>

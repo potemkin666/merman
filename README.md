@@ -12,7 +12,9 @@
 
 **OpenClaw Harbor** is an offline desktop companion app that gives non-technical users a friendly, polished way to install, configure, launch, monitor, and use [OpenClaw](https://github.com/openclaw) agents locally.
 
-It wraps and orchestrates your existing OpenClaw install rather than replacing it, presenting everything through a merman-themed command interface: you issue orders, a handsome emissary is dispatched into the depths, and the results surface back to shore.
+It wraps and orchestrates your existing OpenClaw install rather than replacing it, presenting everything through a merman-themed command interface: you issue orders, your emissary **Azurel** is dispatched into the depths, and the results surface back to shore.
+
+> **Tip:** You can rename the emissary in **Deep Config** — but his default name is Azurel.
 
 ---
 
@@ -112,7 +114,7 @@ Packaged output goes to `release/`.
 2. Open **Setup** to run `npm install` inside that folder and verify prerequisites.
 3. Return to **The Harbor** and press **Summon** to start the OpenClaw service (`node index.js`).
 4. Use **Dispatch** to send tasks/prompts directly to the running agent.
-5. Open **The Fishtank** to watch the emissary work — he'll swim, think, examine scrolls, and share his thoughts while he's at it.
+5. Open **The Fishtank** to watch Azurel work — he'll swim, think, examine scrolls, and share his thoughts while he's at it.
 
 The app spawns OpenClaw as a child process, captures its stdout/stderr, translates output into readable log entries in **Tide Log**, and surfaces errors with plain-English explanations.
 
@@ -125,22 +127,22 @@ The app spawns OpenClaw as a child process, captures its stdout/stderr, translat
 | **The Harbor** | Main dashboard: status, quick actions, environment health, recent dispatches |
 | **Setup Wizard** | Guided onboarding: check prerequisites, locate install, run setup |
 | **Dispatch** | Send a task to the emissary; select a mode/preset; view results |
-| **The Fishtank** | Peer into the depths — watch the emissary's idle animations and hear his thoughts |
+| **The Fishtank** | Peer into the depths — watch Azurel's idle animations and hear his thoughts |
 | **Tide Log** | Filterable log panel with simplified and raw views |
-| **Deep Config** | Form-based settings: paths, model, provider, API key, presets |
+| **Deep Config** | Form-based settings: paths, model, provider, API key, emissary name, presets |
 
 ---
 
 ## The Fishtank 🐠
 
-Click "Fishtank" in the sidebar to peer into the emissary's underwater world. You'll see:
+Click "Fishtank" in the sidebar to peer into Azurel's underwater world. You'll see:
 
 - **Idle animations** that cycle automatically — floating, swimming, thinking, examining scrolls, waving, stretching, gazing into the abyss
-- **Status-aware sayings** — the emissary says different things depending on whether he's idle, working, done, or encountering errors
+- **Status-aware sayings** — Azurel says different things depending on whether he's idle, working, done, or encountering errors
 - **Ambient effects** — bubbles rise, caustic light drifts, coral decorates the seabed
 - **Live status** — a bottom bar shows what the emissary is currently doing
 
-When a task is running, the emissary's animations shift to focused work behavior and his sayings reflect progress.
+When a task is running, Azurel's animations shift to focused work behavior and his sayings reflect progress.
 
 ---
 
@@ -154,6 +156,7 @@ When a task is running, the emissary's animations shift to focused work behavior
 - [x] Start / stop / restart OpenClaw service with real process tracking
 - [x] Dispatch screen with prompt entry, mode selection, output panel
 - [x] Fishtank with animated emissary, cycling idle behaviors, and status-aware sayings
+- [x] Customizable emissary name (default: Azurel) — set in Deep Config, used throughout the UI
 - [x] Tide Log with severity filters and raw/simplified toggle
 - [x] Deep Config with path fields, model settings, preset management
 - [x] Error translation with plain-English explanations and retry buttons
