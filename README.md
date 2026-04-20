@@ -44,6 +44,15 @@ npm install
 npm run dev
 ```
 
+### One-click launcher (no terminal needed!)
+
+After cloning, you can use the included launcher shortcuts instead of the terminal:
+
+- **Windows:** Double-click `start.bat`
+- **macOS / Linux:** Double-click `start.sh` (or run `./start.sh` in terminal)
+
+These scripts automatically install dependencies if needed and launch the app. No npm or terminal knowledge required.
+
 ### Build for production (unpacked)
 
 ```bash
