@@ -25,7 +25,7 @@ import {
   spawnParticles as spawnParticlesFromWeather,
   getBubbleColors,
   getParticleColor,
-} from './fishtank'
+} from './fishtank-lib'
 
 interface DroppedPathInfo {
   path: string
