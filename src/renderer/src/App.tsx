@@ -9,14 +9,19 @@ import { Fishtank } from './screens/Fishtank'
 import { DeepDive } from './screens/DeepDive'
 import { TideLog } from './screens/TideLog'
 import { DeepConfig } from './screens/DeepConfig'
-import { useAppState } from './hooks/useAppState'
+import { ConfigProvider, useConfig } from './hooks/useConfig'
+import { LogsProvider, useLogs } from './hooks/useLogs'
+import { ServiceProvider, useService } from './hooks/useService'
+import { TasksProvider, useTasks } from './hooks/useTasks'
 import { isElectronAvailable, useIpc } from './hooks/useIpc'
 import { IPC_CHANNELS } from '../../shared/ipc'
 
-export default function App() {
+function AppContent() {
   const [page, setPage] = useState('harbor')
-  const electronAvailable = isElectronAvailable()
-  const { config, logs, status, recentTasks, loading, updateConfig, addTask, setStatus } = useAppState()
+  const { config, loading, updateConfig } = useConfig()
+  const { logs } = useLogs()
+  const { status, setStatus } = useService()
+  const { recentTasks, addTask } = useTasks()
   const { invoke } = useIpc()
   const [showWelcome, setShowWelcome] = useState(false)
 
@@ -35,11 +40,6 @@ export default function App() {
     invoke(IPC_CHANNELS.SET_WELCOME_SEEN).catch(() => {
       // Best-effort persist
     })
-  }
-
-  // If the Electron bridge is not available, show a helpful error screen
-  if (!electronAvailable) {
-    return <ElectronUnavailable />
   }
 
   if (loading) {
@@ -88,5 +88,26 @@ export default function App() {
         {renderScreen()}
       </main>
     </div>
+  )
+}
+
+export default function App() {
+  const electronAvailable = isElectronAvailable()
+
+  // If the Electron bridge is not available, show a helpful error screen
+  if (!electronAvailable) {
+    return <ElectronUnavailable />
+  }
+
+  return (
+    <ConfigProvider>
+      <LogsProvider>
+        <ServiceProvider>
+          <TasksProvider>
+            <AppContent />
+          </TasksProvider>
+        </ServiceProvider>
+      </LogsProvider>
+    </ConfigProvider>
   )
 }
