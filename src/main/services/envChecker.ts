@@ -1,4 +1,4 @@
-import { exec } from 'child_process'
+import { execFile } from 'child_process'
 import { existsSync } from 'fs'
 import { join } from 'path'
 import type { EnvCheckResult } from '../../shared/types'
@@ -11,7 +11,7 @@ function checkCommand(name: string, cmd: string, versionFlag = '--version'): Pro
     message: `${name} not found. Install it and make sure it is available in your PATH.`,
   }
   return new Promise((resolve) => {
-    const child = exec(`${cmd} ${versionFlag}`, { encoding: 'utf8', timeout: 5000 }, (err, stdout) => {
+    const child = execFile(cmd, [versionFlag], { encoding: 'utf8', timeout: 5000 }, (err, stdout) => {
       if (err) {
         resolve(notFoundResult)
       } else {

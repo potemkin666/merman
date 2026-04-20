@@ -28,9 +28,15 @@ export function getApiKey(): string {
     if (safeStorage.isEncryptionAvailable()) {
       return safeStorage.decryptString(encryptedBuffer)
     }
-    // Fallback: the key was stored while encryption was available but now it is not.
-    // This is an edge case; return empty and let user re-enter.
-    return ''
+    // Fallback: try to reverse XOR obfuscation (non-safeStorage path)
+    try {
+      const deobfuscated = Buffer.from(
+        Array.from(encryptedBuffer).map((b, i) => b ^ (0xa5 + (i % 37)))
+      )
+      return deobfuscated.toString('utf8')
+    } catch {
+      return ''
+    }
   } catch {
     return ''
   }
@@ -51,9 +57,14 @@ export function setApiKey(key: string): void {
     const encrypted = safeStorage.encryptString(key)
     writeFileSync(keyPath, encrypted)
   } else {
-    // safeStorage not available — store a base64-encoded version.
-    // This is not truly secure but is better than plaintext JSON.
-    // The file is still in userData and not human-readable at a glance.
-    writeFileSync(keyPath, Buffer.from(key, 'utf8'))
+    // safeStorage not available (some Linux desktop configurations).
+    // We apply simple XOR obfuscation so the key is not stored as plain UTF-8.
+    // WARNING: This is NOT a cryptographic guarantee — it only prevents
+    // casual reading of the file. On affected systems, recommend the user
+    // set the key as an environment variable instead.
+    const obfuscated = Buffer.from(
+      Array.from(Buffer.from(key, 'utf8')).map((b, i) => b ^ (0xa5 + (i % 37)))
+    )
+    writeFileSync(keyPath, obfuscated)
   }
 }
