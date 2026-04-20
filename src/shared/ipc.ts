@@ -19,6 +19,7 @@ export const IPC_CHANNELS = {
   ON_LOG: 'on-log',
   ON_STATUS_CHANGE: 'on-status-change',
   RESOLVE_DROPPED_PATHS: 'resolve-dropped-paths',
+  VALIDATE_PATH: 'validate-path',
   TERMINAL_SPAWN: 'terminal-spawn',
   TERMINAL_INPUT: 'terminal-input',
   TERMINAL_RESIZE: 'terminal-resize',

@@ -119,6 +119,10 @@ ipcMain.handle(IPC_CHANNELS.SET_WELCOME_SEEN, () => {
 
 ipcMain.handle(IPC_CHANNELS.GET_LOGS, () => getLogs())
 
+ipcMain.handle(IPC_CHANNELS.VALIDATE_PATH, (_event, path: string) => {
+  return validatePath(path)
+})
+
 ipcMain.handle(IPC_CHANNELS.RUN_SETUP, async (_event, openClawPath: string) => {
   const pathCheck = validatePath(openClawPath)
   if (!pathCheck.ok) {

@@ -45,6 +45,9 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
   const [installLogs, setInstallLogs] = useState<string[]>([])
   const [elapsed, setElapsed] = useState(0)
   const logBottomRef = useRef<HTMLDivElement>(null)
+  const [pathError, setPathError] = useState<string | null>(null)
+  const [validatingPath, setValidatingPath] = useState(false)
+  const [pathValid, setPathValid] = useState(false)
 
   const MAX_INSTALL_LOG_LINES = 200
 
@@ -98,6 +101,49 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
       })
     }
   }, [step, path, invoke])
+
+  // Reset path validation when path changes
+  useEffect(() => {
+    setPathError(null)
+    setPathValid(false)
+  }, [path])
+
+  // Validate path before allowing progression from step 2
+  const validatePathInline = async (): Promise<boolean> => {
+    if (!path || !path.trim()) {
+      setPathError('A path is required before we can continue.')
+      return false
+    }
+    setValidatingPath(true)
+    setPathError(null)
+    try {
+      const result = await invoke<{ ok: boolean; error?: string }>(IPC_CHANNELS.VALIDATE_PATH, path)
+      if (result.ok) {
+        setPathValid(true)
+        setPathError(null)
+        return true
+      } else {
+        setPathError(result.error || 'The path is invalid.')
+        setPathValid(false)
+        return false
+      }
+    } catch {
+      setPathError('Could not validate the path. Please check it and try again.')
+      setPathValid(false)
+      return false
+    } finally {
+      setValidatingPath(false)
+    }
+  }
+
+  const handleNext = async () => {
+    // On step 2 (Configuration), validate path before advancing
+    if (step === 2) {
+      const valid = await validatePathInline()
+      if (!valid) return
+    }
+    setStep((s) => s + 1)
+  }
 
   const runInstall = async () => {
     setInstalling(true)
@@ -322,8 +368,35 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
             </div>
             {!path && (
               <p style={{ marginTop: 12, fontSize: 12, color: 'var(--color-warning)' }}>
-                ⚠️ A path is required before we can install dependencies.
+                ⚠️ A path is required before we can continue.
               </p>
+            )}
+            {pathError && (
+              <div style={{
+                marginTop: 12,
+                padding: '10px 14px',
+                background: 'rgba(232,93,93,0.08)',
+                border: '1px solid rgba(232,93,93,0.2)',
+                borderRadius: 'var(--radius-md)',
+                fontSize: 12,
+                color: 'var(--color-error)',
+                lineHeight: 1.6,
+              }}>
+                ❌ {pathError}
+              </div>
+            )}
+            {pathValid && !pathError && (
+              <div style={{
+                marginTop: 12,
+                padding: '10px 14px',
+                background: 'rgba(45,212,160,0.08)',
+                border: '1px solid rgba(45,212,160,0.2)',
+                borderRadius: 'var(--radius-md)',
+                fontSize: 12,
+                color: 'var(--color-success)',
+              }}>
+                ✅ Path looks good!
+              </div>
             )}
           </div>
         )}
@@ -486,9 +559,14 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
           </button>
         </Tooltip>
         {step < STEPS.length - 1 && (
-          <Tooltip text="Continue to the next step.">
-            <button onClick={() => setStep((s) => s + 1)} aria-label="Go to next step" style={btnPrimary}>
-              Next →
+          <Tooltip text={step === 2 && !path?.trim() ? 'Enter a valid path first.' : 'Continue to the next step.'}>
+            <button
+              onClick={handleNext}
+              disabled={validatingPath}
+              aria-label={validatingPath ? 'Validating path' : 'Go to next step'}
+              style={btnPrimary}
+            >
+              {validatingPath ? '⏳ Checking...' : 'Next →'}
             </button>
           </Tooltip>
         )}

@@ -24,7 +24,6 @@ function AppContent() {
   const { recentTasks, addTask } = useTasks()
   const { invoke } = useIpc()
   const [showWelcome, setShowWelcome] = useState(false)
-  const [attachedFiles, setAttachedFiles] = useState<string[]>([])
 
   useEffect(() => {
     if (!loading) {
@@ -46,10 +45,6 @@ function AppContent() {
   const handleFishtankWorkspaceDrop = useCallback((path: string) => {
     updateConfig({ workspacePath: path })
   }, [updateConfig])
-
-  const handleFishtankFilesAttached = useCallback((paths: string[]) => {
-    setAttachedFiles(prev => [...prev, ...paths])
-  }, [])
 
   if (loading) {
     return (
@@ -77,7 +72,7 @@ function AppContent() {
       case 'harbor': return <Harbor config={config} status={status} recentTasks={recentTasks} onStatusChange={setStatus} onNavigate={setPage} />
       case 'setup': return <SetupWizard config={config} onSave={updateConfig} />
       case 'dispatch': return <Dispatch config={config} onTaskAdded={addTask} />
-      case 'fishtank': return <Fishtank status={status} recentTasks={recentTasks} onWorkspacePathSet={handleFishtankWorkspaceDrop} onFilesAttached={handleFishtankFilesAttached} />
+      case 'fishtank': return <Fishtank status={status} recentTasks={recentTasks} onWorkspacePathSet={handleFishtankWorkspaceDrop} />
       case 'deepdive': return <DeepDive config={config} />
       case 'tidelog': return <TideLog logs={logs} />
       case 'deepconfig': return <DeepConfig config={config} onSave={updateConfig} />
