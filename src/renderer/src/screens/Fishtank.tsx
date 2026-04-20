@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import type { ServiceStatus, TaskResult } from '../../../shared/types'
 import { useIpc } from '../hooks/useIpc'
 import { useConfig } from '../hooks/useConfig'
@@ -42,6 +42,8 @@ export const Fishtank: React.FC<FishtankProps> = ({ status, recentTasks = [], on
   const { invoke } = useIpc()
   const { config } = useConfig()
   const name = config.emissaryName || 'Azurel'
+  // Generate a unique seed once per session so the seabed layout differs every time the app is opened
+  const seabedSeed = useMemo(() => Math.floor(Math.random() * 1_000_000), [])
   const [animation, setAnimation] = useState<EmissaryAnimation>('floating')
   const [saying, setSaying] = useState('')
   const [sayingKey, setSayingKey] = useState(0)
@@ -370,7 +372,7 @@ export const Fishtank: React.FC<FishtankProps> = ({ status, recentTasks = [], on
         })}
 
         {/* Procedural seabed */}
-        <SeabedCanvas width={tankSize.width} height={tankSize.height} seed={42} weather={weather} />
+        <SeabedCanvas width={tankSize.width} height={tankSize.height} seed={seabedSeed} weather={weather} />
 
         {/* The Emissary — clickable for interaction */}
         <div

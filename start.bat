@@ -1,6 +1,6 @@
 @echo off
 setlocal enabledelayedexpansion
-title OpenClaw Harbor - Starting...
+title 🐟 OpenClaw Harbor
 color 1F
 
 REM Always run from the directory this script lives in
