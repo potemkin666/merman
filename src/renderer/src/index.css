@@ -51,6 +51,13 @@ button {
   cursor: pointer;
   border: none;
   outline: none;
+  animation: underwaterBob 4s ease-in-out infinite;
+  animation-delay: calc(var(--bob-seed, 0) * 0.6s);
+  transition: transform 0.3s ease;
+}
+
+button:active {
+  animation: clickRipple 0.4s ease-out;
 }
 
 input, textarea, select {
@@ -63,6 +70,7 @@ input, textarea, select {
   backdrop-filter: blur(12px);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
+  animation: underwaterBob 5s ease-in-out infinite;
 }
 
 /* --- Tooltip animation --- */
@@ -237,4 +245,62 @@ input, textarea, select {
   0% { transform: translateY(0) scale(1); opacity: 0.6; }
   50% { transform: translateY(-14px) scale(1.08); opacity: 0.3; }
   100% { transform: translateY(6px) scale(0.97); opacity: 0.7; }
+}
+
+/* ======= Underwater physics system ======= */
+
+/* Gentle vertical bob for panels, cards, and buttons */
+@keyframes underwaterBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+/* Drift effect that triggers on resize via a transition fallback */
+@keyframes underwaterDrift {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(2px, -1px); }
+  50% { transform: translate(-1px, 1px); }
+  75% { transform: translate(1px, -2px); }
+}
+
+/* Click ripple burst */
+@keyframes clickRipple {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 200, 212, 0.4); }
+  50% { transform: scale(0.97); box-shadow: 0 0 0 8px rgba(0, 200, 212, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 200, 212, 0); }
+}
+
+/* Light-refraction text shimmer */
+@keyframes textRefraction {
+  0%, 100% { filter: none; }
+  25% { filter: blur(0.2px) brightness(1.04); }
+  50% { filter: none; }
+  75% { filter: blur(0.15px) brightness(1.02); }
+}
+
+/* Apply underwater bob to common panel containers */
+section,
+[role="img"],
+[role="status"],
+[role="dialog"] {
+  animation: underwaterBob 6s ease-in-out infinite;
+}
+
+/* Text refraction on headings */
+h1, h2, h3 {
+  animation: textRefraction 8s ease-in-out infinite;
+}
+
+/* Drift on panels when viewport resizes — a subtle transition that
+   gives the illusion of settling back into position after movement */
+main > div {
+  transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Preference: reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0s !important;
+    transition-duration: 0s !important;
+  }
 }
