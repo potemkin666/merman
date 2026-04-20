@@ -519,17 +519,42 @@ main > div {
   cursor: pointer;
 }
 
-.fishtank-emissary-orb {
-  width: 130px;
-  height: 130px;
+/* Glow halo — radial soft ring that sits behind the PNG portrait */
+.fishtank-emissary-halo {
+  position: absolute;
+  width: 220px;
+  height: 220px;
   border-radius: 50%;
-  background: radial-gradient(circle at 40% 35%, rgba(0,200,212,0.15), rgba(0,200,212,0.03));
-  border: 2px solid rgba(0,200,212,0.25);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 60px;
+  background: radial-gradient(circle, rgba(0,200,212,0.12) 0%, transparent 70%);
+  border: 1.5px solid rgba(0,200,212,0.18);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -55%);
+  pointer-events: none;
   transition: box-shadow 1s;
+  animation: haloBreath 4s ease-in-out infinite;
+}
+
+@keyframes haloBreath {
+  0%, 100% { opacity: 0.8; transform: translate(-50%, -55%) scale(1); }
+  50%       { opacity: 1;   transform: translate(-50%, -55%) scale(1.05); }
+}
+
+/* The merman portrait PNG */
+.fishtank-emissary-img {
+  width: 260px;
+  height: 310px;
+  object-fit: contain;
+  object-position: center bottom;
+  filter: drop-shadow(0 0 18px rgba(0,200,212,0.35)) drop-shadow(0 0 6px rgba(0,200,212,0.5));
+  position: relative;
+  z-index: 2;
+  transition: filter 0.8s ease, transform 0.3s ease;
+}
+
+.fishtank-emissary:hover .fishtank-emissary-img {
+  filter: drop-shadow(0 0 28px rgba(0,200,212,0.5)) drop-shadow(0 0 10px rgba(0,200,212,0.6));
+  transform: scale(1.03);
 }
 
 .fishtank-emissary-label {
@@ -540,6 +565,8 @@ main > div {
   font-weight: 500;
   text-align: center;
   max-width: 200px;
+  position: relative;
+  z-index: 2;
 }
 
 .fishtank-speech {

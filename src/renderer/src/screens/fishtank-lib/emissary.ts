@@ -1,4 +1,5 @@
 import type { ServiceStatus } from '../../../../shared/types'
+import type { Weather } from './weather'
 
 // --- Expanded idle animations ---
 export type EmissaryAnimation =
@@ -98,4 +99,95 @@ export function getEmissaryStyle(animation: EmissaryAnimation, status: ServiceSt
     'examining-scroll': 'emissaryFloat 5s ease-in-out infinite',
   }
   return { ...base, animation: map[animation] || 'emissaryFloat 4s ease-in-out infinite' }
+}
+
+// ── Emotion mapping for PNG sprite selection ──────────────────────────────────
+
+export type EmissaryEmotion =
+  | 'angry'
+  | 'ashamed'
+  | 'awaiting'
+  | 'blowing-bubbles'
+  | 'bored'
+  | 'broody'
+  | 'browsing'
+  | 'cheeky-2'
+  | 'cheeky-grin'
+  | 'cheeky'
+  | 'chortle'
+  | 'chuckling'
+  | 'concussion'
+  | 'confident'
+  | 'confused'
+  | 'crying'
+  | 'flirting'
+  | 'giggling'
+  | 'hunger'
+  | 'idle-cheeky'
+  | 'idle-sitting'
+  | 'idle'
+  | 'joy'
+  | 'keen'
+  | 'lonely'
+  | 'romantic-interest'
+  | 'romantic'
+  | 'sad-1'
+  | 'sad-2'
+  | 'searching'
+  | 'secretive'
+  | 'shock'
+  | 'smiling'
+  | 'smirks'
+  | 'speed'
+  | 'super-playful'
+  | 'swimming'
+  | 'teasing'
+  | 'very-confused'
+  | 'waving-hello'
+  | 'yearning'
+
+/**
+ * Derives which portrait image to display based on the current animation,
+ * service status, and weather state.
+ *
+ * Priority (highest → lowest):
+ *   1. Error status          → shock
+ *   2. Thunderstorm weather  → shock
+ *   3. Running status        → keen
+ *   4. Golden weather        → joy
+ *   5. Animation-specific portrait
+ *   6. Default               → idle
+ */
+export function getEmissaryEmotion(
+  animation: EmissaryAnimation,
+  status: ServiceStatus,
+  weather: Weather,
+): EmissaryEmotion {
+  if (status === 'error') return 'shock'
+  if (weather === 'thunderstorm') return 'shock'
+  if (status === 'running') return 'keen'
+  if (weather === 'golden') return 'joy'
+
+  const map: Record<EmissaryAnimation, EmissaryEmotion> = {
+    floating:           'idle',
+    swimming:           'swimming',
+    thinking:           'broody',
+    'examining-scroll': 'searching',
+    waving:             'waving-hello',
+    stretching:         'idle-sitting',
+    gazing:             'yearning',
+    flirty:             'flirting',
+    fearful:            'shock',
+    preening:           'smirks',
+    'collecting-pearls':'keen',
+    'chasing-fish':     'super-playful',
+    flexing:            'confident',
+    singing:            'chortle',
+    napping:            'idle-sitting',
+    beckoning:          'romantic',
+    meditating:         'awaiting',
+    'juggling-shells':  'cheeky',
+    posing:             'smirks',
+  }
+  return map[animation] ?? 'idle'
 }

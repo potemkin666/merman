@@ -6,6 +6,7 @@ import { IPC_CHANNELS } from '../../../shared/ipc'
 import { SeabedCanvas } from '../components/SeabedCanvas'
 import { HabitSuggestion } from '../components/HabitSuggestion'
 import { Tooltip } from '../components/Tooltip'
+import { EmissaryFigure } from '../components/EmissaryFigure'
 import {
   type Weather,
   type EmissaryAnimation,
@@ -16,8 +17,8 @@ import {
   WEATHER_CAUSTIC_OPACITY,
   ANIMATIONS,
   ANIMATION_LABELS,
-  ANIMATION_EMOJIS,
   getEmissaryStyle,
+  getEmissaryEmotion,
   getSayings,
   getStatusText,
   getClickResponse,
@@ -251,6 +252,7 @@ export const Fishtank: React.FC<FishtankProps> = ({ status, recentTasks = [], on
   }, [])
 
   const emissaryStyle = getEmissaryStyle(animation, status)
+  const emissaryEmotion = getEmissaryEmotion(animation, status, weather)
 
   return (
     <div className="fishtank-page">
@@ -392,27 +394,16 @@ export const Fishtank: React.FC<FishtankProps> = ({ status, recentTasks = [], on
         {/* Procedural seabed */}
         <SeabedCanvas width={tankSize.width} height={tankSize.height} seed={seabedSeed} weather={weather} />
 
-        {/* The Emissary — clickable for interaction */}
-        <div
-          onClick={handleEmissaryClick}
-          role="button"
-          tabIndex={0}
-          aria-label={`Click ${name} to interact`}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleEmissaryClick() } }}
-          className="fishtank-emissary"
+        {/* The Emissary — PNG portrait, glow halo, action label */}
+        <EmissaryFigure
+          emotion={emissaryEmotion}
+          animation={animation}
+          status={status}
+          name={name}
           style={emissaryStyle}
-        >
-          <div className="fishtank-emissary-orb" style={{
-            boxShadow: status === 'running'
-              ? '0 0 50px rgba(0,200,212,0.3), 0 0 100px rgba(0,200,212,0.1)'
-              : '0 0 25px rgba(0,200,212,0.12)',
-          }}>
-            {ANIMATION_EMOJIS[animation]}
-          </div>
-          <div className="fishtank-emissary-label">
-            {ANIMATION_LABELS[animation]}
-          </div>
-        </div>
+          onClick={handleEmissaryClick}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleEmissaryClick() } }}
+        />
 
         {/* Speech bubble */}
         <div key={sayingKey} aria-live="polite" aria-label={`${name} says`} className="fishtank-speech">
