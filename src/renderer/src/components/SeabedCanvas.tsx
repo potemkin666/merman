@@ -138,7 +138,7 @@ function drawRock(ctx: CanvasRenderingContext2D, x: number, baseY: number, size:
   ctx.restore()
 }
 
-function drawBioluminescent(ctx: CanvasRenderingContext2D, x: number, baseY: number, size: number, hue: number, swayOffset: number): void {
+function drawBioluminescent(ctx: CanvasRenderingContext2D, x: number, baseY: number, size: number, hue: number, swayOffset: number, glowMultiplier = 1): void {
   const petals = 4 + Math.floor(size / 6)
   ctx.save()
   ctx.translate(x, baseY)
@@ -154,9 +154,9 @@ function drawBioluminescent(ctx: CanvasRenderingContext2D, x: number, baseY: num
   const gy = -size * 0.6
   ctx.beginPath()
   ctx.arc(gx, gy, size * 0.3, 0, Math.PI * 2)
-  ctx.fillStyle = `hsla(${hue}, 80%, 60%, ${0.15 + Math.sin(swayOffset * 2) * 0.1})`
-  ctx.shadowColor = `hsla(${hue}, 90%, 65%, 0.5)`
-  ctx.shadowBlur = 12
+  ctx.fillStyle = `hsla(${hue}, 80%, 60%, ${(0.15 + Math.sin(swayOffset * 2) * 0.1) * glowMultiplier})`
+  ctx.shadowColor = `hsla(${hue}, 90%, 65%, ${0.5 * glowMultiplier})`
+  ctx.shadowBlur = 12 * glowMultiplier
   ctx.fill()
   ctx.shadowBlur = 0
   // Petals
@@ -285,9 +285,10 @@ interface SeabedCanvasProps {
   width: number
   height: number
   seed?: number
+  weather?: string
 }
 
-export const SeabedCanvas: React.FC<SeabedCanvasProps> = ({ width, height, seed = 42 }) => {
+export const SeabedCanvas: React.FC<SeabedCanvasProps> = ({ width, height, seed = 42, weather = 'calm' }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const itemsRef = useRef<SeabedItem[]>([])
   const creaturesRef = useRef<Creature[]>([])
@@ -328,6 +329,16 @@ export const SeabedCanvas: React.FC<SeabedCanvasProps> = ({ width, height, seed 
       ctx.fill()
     }
 
+    // Bioluminescence glow multiplier based on weather
+    const glowMap: Record<string, number> = {
+      calm: 1,
+      working: 1.5,
+      stormy: 0.4,
+      golden: 2,
+      thunderstorm: 0.2,
+    }
+    const glowMult = glowMap[weather] ?? 1
+
     // Draw seabed items
     const baseY = height - 12
     for (const item of itemsRef.current) {
@@ -336,7 +347,7 @@ export const SeabedCanvas: React.FC<SeabedCanvasProps> = ({ width, height, seed 
         case 'coral': drawCoral(ctx, item.x, baseY, item.size, item.hue, swayOffset); break
         case 'kelp': drawKelp(ctx, item.x, baseY, item.size, item.hue, swayOffset); break
         case 'rock': drawRock(ctx, item.x, baseY, item.size); break
-        case 'bioluminescent': drawBioluminescent(ctx, item.x, baseY, item.size, item.hue, swayOffset); break
+        case 'bioluminescent': drawBioluminescent(ctx, item.x, baseY, item.size, item.hue, swayOffset, glowMult); break
         case 'shell': drawShell(ctx, item.x, baseY, item.size, item.hue); break
         case 'anemone': drawAnemone(ctx, item.x, baseY, item.size, item.hue, swayOffset); break
       }
@@ -355,7 +366,7 @@ export const SeabedCanvas: React.FC<SeabedCanvasProps> = ({ width, height, seed 
     }
 
     frameRef.current = requestAnimationFrame(draw)
-  }, [width, height, seed])
+  }, [width, height, seed, weather])
 
   useEffect(() => {
     frameRef.current = requestAnimationFrame(draw)
