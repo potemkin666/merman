@@ -59,8 +59,11 @@ test.describe('Harbor smoke test', () => {
     // Wait for Harbor to load
     await expect(window.locator('h1')).toHaveText('The Harbour', { timeout: 15000 })
 
-    // Click on Dispatch in sidebar using specific aria-label, with force to bypass animation instability
-    await window.locator('button[aria-label="Navigate to Dispatch"]').click({ force: true })
+    // Click on Dispatch in sidebar — force: true needed because sidebar has CSS animations
+    // that Playwright detects as instability (caustic light overlays)
+    const dispatchBtn = window.locator('button[aria-label="Navigate to Dispatch"]')
+    await expect(dispatchBtn).toBeVisible({ timeout: 5000 })
+    await dispatchBtn.click({ force: true })
 
     // Verify we navigated to the Dispatch screen
     await expect(window.locator('h1')).toHaveText('Dispatch', { timeout: 5000 })
@@ -74,8 +77,11 @@ test.describe('Harbor smoke test', () => {
     // Wait for Harbor to load
     await expect(window.locator('h1')).toHaveText('The Harbour', { timeout: 15000 })
 
-    // Click on Fishtank in sidebar using specific aria-label, with force to bypass animation instability
-    await window.locator('button[aria-label="Navigate to Fishtank"]').click({ force: true })
+    // Click on Fishtank in sidebar — force: true needed because sidebar has CSS animations
+    // that Playwright detects as instability (caustic light overlays)
+    const fishtankBtn = window.locator('button[aria-label="Navigate to Fishtank"]')
+    await expect(fishtankBtn).toBeVisible({ timeout: 5000 })
+    await fishtankBtn.click({ force: true })
 
     // Verify we navigated to the Fishtank screen
     await expect(window.locator('h1')).toHaveText('The Fishtank', { timeout: 5000 })

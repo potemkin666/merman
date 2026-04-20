@@ -135,7 +135,7 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
             onClick={handleSummon}
             disabled={isRunning}
             aria-label="Summon — start the OpenClaw service"
-            className={`btn ${isRunning ? 'btn--primary' : 'btn--primary'}`}
+            className={`btn btn--primary`}
             style={isRunning ? { background: 'rgba(0,200,212,0.2)', color: 'var(--color-text-muted)', boxShadow: 'none', cursor: 'not-allowed' } : {}}
           >
             🔱 Summon
