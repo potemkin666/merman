@@ -5,6 +5,7 @@ import { useConfig } from '../hooks/useConfig'
 import { IPC_CHANNELS } from '../../../shared/ipc'
 import { SeabedCanvas } from '../components/SeabedCanvas'
 import { HabitSuggestion } from '../components/HabitSuggestion'
+import { Tooltip } from '../components/Tooltip'
 import {
   type Weather,
   type EmissaryAnimation,
@@ -120,7 +121,17 @@ export const Fishtank: React.FC<FishtankProps> = ({ status, recentTasks = [], on
     setDragOver(false)
 
     const files = e.dataTransfer?.files
-    if (!files || files.length === 0) return
+    // If no File objects were in the drop (e.g. text, URL, link), tell the user
+    if (!files || files.length === 0) {
+      const hasItems = (e.dataTransfer?.items?.length ?? 0) > 0
+      if (hasItems) {
+        setCatchMessage('🚫 Drop files or folders — not links or text.')
+        setSaying('*squints at the foreign object* That is not a file. Try dragging a folder or document from your file manager.')
+        setSayingKey(k => k + 1)
+        setTimeout(() => setCatchMessage(''), 4000)
+      }
+      return
+    }
 
     // Collect the file paths from the drop event
     const paths: string[] = []
@@ -130,7 +141,14 @@ export const Fishtank: React.FC<FishtankProps> = ({ status, recentTasks = [], on
       const filePath = (f as File & { path?: string }).path
       if (filePath) paths.push(filePath)
     }
-    if (paths.length === 0) return
+    // If we had File objects but none had an Electron path (e.g. browser-sandboxed drag)
+    if (paths.length === 0) {
+      setCatchMessage('🚫 Drop files or folders — not links or text.')
+      setSaying('*squints at the foreign object* That is not a file. Try dragging a folder or document from your file manager.')
+      setSayingKey(k => k + 1)
+      setTimeout(() => setCatchMessage(''), 4000)
+      return
+    }
 
     // Trigger "catch" animation
     setCatchAnimation(true)
@@ -417,7 +435,21 @@ export const Fishtank: React.FC<FishtankProps> = ({ status, recentTasks = [], on
             {status === 'running' ? 'Working in the depths' : status === 'error' ? 'Troubled waters' : status === 'stopped' ? 'Resting at shore' : 'Awaiting command'}
           </span>
           <span className="fishtank-weather-label">
-            {weather === 'calm' ? '☀️ clear' : weather === 'working' ? '🌊 active' : weather === 'stormy' ? '🌧️ stormy' : weather === 'golden' ? '✨ golden' : '⛈️ storm'}
+            <Tooltip
+              text={
+                weather === 'calm'     ? '☀️ Calm — the emissary is idle, awaiting your next dispatch.' :
+                weather === 'working'  ? '🌊 Active — the emissary is currently working on a task.' :
+                weather === 'stormy'   ? '🌧️ Stormy — the last task failed. Clears after ~60 seconds.' :
+                weather === 'golden'   ? '✨ Golden — the last task completed successfully. Enjoy it while it lasts.' :
+                                         '⛈️ Thunderstorm — the service has crashed or encountered a critical error. Check the Tide Log.'
+              }
+              position="top"
+              maxWidth={320}
+            >
+              <span style={{ cursor: 'help' }}>
+                {weather === 'calm' ? '☀️ clear' : weather === 'working' ? '🌊 active' : weather === 'stormy' ? '🌧️ stormy' : weather === 'golden' ? '✨ golden' : '⛈️ storm'}
+              </span>
+            </Tooltip>
           </span>
         </div>
       </div>

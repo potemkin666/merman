@@ -26,6 +26,7 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
   const [dispatching, setDispatching] = useState(false)
   const [result, setResult] = useState<CommandResult | null>(null)
   const [elapsed, setElapsed] = useState(0)
+  const [lastDispatchedPrompt, setLastDispatchedPrompt] = useState('')
   const [cancelling, setCancelling] = useState(false)
   const [showAdvancedConfirm, setShowAdvancedConfirm] = useState(false)
   const [cooldown, setCooldown] = useState(0)
@@ -83,8 +84,9 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
     setCancelling(false)
   }
 
-  const handleDispatch = async () => {
-    if (!prompt.trim()) return
+  const handleDispatch = async (overridePrompt?: string) => {
+    const promptToUse = overridePrompt !== undefined ? overridePrompt : prompt.trim()
+    if (!promptToUse) return
     if (cooldown > 0) return
 
     // If the selected mode is "advanced" (Advanced Custom preset), require confirmation first
@@ -97,10 +99,11 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
     setShowAdvancedConfirm(false)
     setDispatching(true)
     setResult(null)
+    setLastDispatchedPrompt(promptToUse)
 
     const task: TaskResult = {
       id: Date.now().toString(),
-      prompt: prompt.trim(),
+      prompt: promptToUse,
       mode,
       status: 'running',
       startedAt: new Date().toISOString(),
@@ -108,7 +111,7 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
 
     const res = await invoke<CommandResult>(
       IPC_CHANNELS.DISPATCH_TASK,
-      { prompt: prompt.trim(), mode, openClawPath: config.openClawPath }
+      { prompt: promptToUse, mode, openClawPath: config.openClawPath }
     )
 
     const finalTask: TaskResult = {
@@ -122,6 +125,10 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
     setDispatching(false)
     setResult(res)
     setCooldown(DISPATCH_COOLDOWN_S)
+  }
+
+  const handleRetry = () => {
+    if (lastDispatchedPrompt) handleDispatch(lastDispatchedPrompt)
   }
 
   return (
@@ -258,9 +265,9 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
             </pre>
           )}
           {result.explanation?.retryable !== false && (
-            <Tooltip text={cooldown > 0 ? `Cooling down — ready in ${cooldown}s.` : "Try the same task again. Sometimes things work on the second try if it was a temporary issue."}>
+            <Tooltip text={cooldown > 0 ? `Cooling down — ready in ${cooldown}s.` : "Re-send the original task exactly as it was dispatched — even if you have edited the text above."}>
               <button
-                onClick={handleDispatch}
+                onClick={handleRetry}
                 disabled={dispatching || cooldown > 0}
                 aria-label={cooldown > 0 ? `Retry available in ${cooldown}s` : "Retry the failed task"}
                 className="btn btn--warning"
