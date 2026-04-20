@@ -36,12 +36,20 @@ function AppContent() {
     }
   }, [loading, invoke])
 
-  const dismissWelcome = () => {
+  const dismissWelcome = useCallback(() => {
     setShowWelcome(false)
     invoke(IPC_CHANNELS.SET_WELCOME_SEEN).catch(() => {
       // Best-effort persist
     })
-  }
+  }, [invoke])
+
+  const handleFishtankWorkspaceDrop = useCallback((path: string) => {
+    updateConfig({ workspacePath: path })
+  }, [updateConfig])
+
+  const handleFishtankFilesAttached = useCallback((paths: string[]) => {
+    setAttachedFiles(prev => [...prev, ...paths])
+  }, [])
 
   if (loading) {
     return (
@@ -63,14 +71,6 @@ function AppContent() {
       </div>
     )
   }
-
-  const handleFishtankWorkspaceDrop = useCallback((path: string) => {
-    updateConfig({ workspacePath: path })
-  }, [updateConfig])
-
-  const handleFishtankFilesAttached = useCallback((paths: string[]) => {
-    setAttachedFiles(prev => [...prev, ...paths])
-  }, [])
 
   const renderScreen = () => {
     switch (page) {

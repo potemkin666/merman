@@ -16,7 +16,8 @@
     "dist:linux": "electron-vite build && electron-builder --linux",
     "rebuild": "electron-rebuild",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e": "npx playwright test"
   },
   "build": {
     "appId": "com.openclaw.harbor",
@@ -68,12 +69,13 @@
     "node-pty": "^1.1.0"
   },
   "devDependencies": {
+    "@electron/rebuild": "^4.0.3",
+    "@playwright/test": "^1.59.1",
     "@types/node": "^20.11.5",
     "@types/react": "^18.2.48",
     "@types/react-dom": "^18.2.18",
     "@vitejs/plugin-react": "^4.2.1",
     "electron": "^41.2.1",
-    "@electron/rebuild": "^4.0.3",
     "electron-builder": "^26.8.1",
     "electron-vite": "^5.0.0",
     "typescript": "^5.3.3",
