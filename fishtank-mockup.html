@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fishtank UI Mockup — Merman Character</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Design tokens ── */
+    :root {
+      --color-bg: #060d1a;
+      --color-primary: #00c8d4;
+      --color-accent: #c9a227;
+      --color-text: #e8f4f8;
+      --color-text-muted: #7ba8b8;
+      --color-success: #2dd4a0;
+      --color-panel: rgba(15,32,64,0.75);
+      --color-border: rgba(0,200,212,0.15);
+      --font: 'Inter', system-ui, sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font);
+      background: var(--color-bg);
+      background-image:
+        radial-gradient(ellipse at 20% 20%, rgba(0,180,210,0.06) 0%, transparent 55%),
+        radial-gradient(ellipse at 80% 80%, rgba(26,155,138,0.05) 0%, transparent 55%);
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 40px 24px 60px;
+      color: var(--color-text);
+    }
+
+    /* ── Page wrapper ── */
+    .fishtank-page {
+      width: 100%;
+      max-width: 880px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .screen-title {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--color-primary);
+      margin-bottom: 6px;
+    }
+
+    .screen-subtitle {
+      font-size: 14px;
+      color: var(--color-text-muted);
+      margin-bottom: 20px;
+    }
+
+    .drop-hint {
+      font-size: 12px;
+      color: var(--color-text-muted);
+      opacity: 0.7;
+      margin-left: 8px;
+    }
+
+    /* ── The tank ── */
+    .fishtank-tank {
+      width: 100%;
+      height: 480px;
+      background: linear-gradient(175deg, #0a2240 0%, #061428 40%, #040e1e 100%);
+      border: 2px solid rgba(0,200,212,0.2);
+      border-radius: 20px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: inset 0 0 100px rgba(0,200,212,0.06), 0 0 50px rgba(0,200,212,0.08);
+    }
+
+    /* ── Caustic light blobs ── */
+    .caustic {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .caustic-1 {
+      background: radial-gradient(ellipse at 25% 15%, rgba(0,200,212,0.07) 0%, transparent 55%);
+      animation: caustic 8s ease-in-out infinite alternate;
+    }
+    .caustic-2 {
+      background: radial-gradient(ellipse at 75% 35%, rgba(26,155,138,0.06) 0%, transparent 45%);
+      animation: caustic 13s ease-in-out infinite alternate-reverse;
+    }
+    .caustic-3 {
+      background: radial-gradient(ellipse at 50% 80%, rgba(0,100,150,0.05) 0%, transparent 40%);
+      animation: caustic 10s ease-in-out infinite alternate;
+    }
+
+    @keyframes caustic {
+      from { transform: scale(1) translate(0, 0); }
+      to   { transform: scale(1.08) translate(2%, 1%); }
+    }
+
+    /* ── Light rays ── */
+    .lightray {
+      position: absolute;
+      top: 0;
+      pointer-events: none;
+    }
+    .lightray-1 {
+      left: 18%;
+      width: 80px;
+      height: 62%;
+      background: linear-gradient(180deg, rgba(0,200,212,0.04), transparent);
+      transform: skewX(-8deg);
+      animation: lightRay 6s ease-in-out infinite alternate;
+    }
+    .lightray-2 {
+      left: 60%;
+      width: 50px;
+      height: 52%;
+      background: linear-gradient(180deg, rgba(0,200,212,0.03), transparent);
+      transform: skewX(5deg);
+      animation: lightRay 8s ease-in-out infinite alternate-reverse;
+    }
+    @keyframes lightRay {
+      from { opacity: 0.5; }
+      to   { opacity: 1; }
+    }
+
+    /* ── Seabed SVG strip ── */
+    .seabed {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 80px;
+      pointer-events: none;
+    }
+
+    /* ── Bubbles ── */
+    .bubble {
+      position: absolute;
+      bottom: -20px;
+      border-radius: 50%;
+      border: 1px solid rgba(0,200,212,0.4);
+      background: radial-gradient(circle at 30% 30%, rgba(0,220,230,0.25), rgba(0,100,150,0.08));
+      animation: bubbleRise linear infinite;
+      pointer-events: none;
+    }
+    @keyframes bubbleRise {
+      0%   { transform: translateY(0) translateX(0); opacity: 0; }
+      10%  { opacity: 0.7; }
+      90%  { opacity: 0.5; }
+      100% { transform: translateY(-520px) translateX(var(--drift)); opacity: 0; }
+    }
+
+    /* ── Floating particles ── */
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      animation: particleFloat ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes particleFloat {
+      0%, 100% { transform: translateY(0) scale(1); opacity: 0.4; }
+      50%       { transform: translateY(-12px) scale(1.2); opacity: 0.8; }
+    }
+
+    /* ── THE MERMAN CHARACTER ── */
+    .fishtank-emissary {
+      position: absolute;
+      top: 48%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      animation: emissaryFloat 4s ease-in-out infinite;
+      z-index: 5;
+    }
+
+    @keyframes emissaryFloat {
+      0%, 100% { transform: translate(-50%, -50%) translateY(0); }
+      50%       { transform: translate(-50%, -50%) translateY(-10px); }
+    }
+
+    /* Glow halo ring behind the character */
+    .emissary-halo {
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,200,212,0.12) 0%, transparent 70%);
+      border: 1.5px solid rgba(0,200,212,0.18);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -55%);
+      pointer-events: none;
+      box-shadow: 0 0 40px rgba(0,200,212,0.15), 0 0 80px rgba(0,200,212,0.06);
+      animation: haloBreath 4s ease-in-out infinite;
+    }
+
+    @keyframes haloBreath {
+      0%, 100% { opacity: 0.8; transform: translate(-50%, -55%) scale(1); }
+      50%       { opacity: 1;   transform: translate(-50%, -55%) scale(1.05); }
+    }
+
+    /* The PNG image placeholder */
+    .emissary-img {
+      width: 280px;
+      height: 320px;
+      object-fit: contain;
+      object-position: center bottom;
+      filter: drop-shadow(0 0 20px rgba(0,200,212,0.35)) drop-shadow(0 0 6px rgba(0,200,212,0.5));
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Placeholder shown when no PNG is loaded */
+    .emissary-placeholder {
+      width: 260px;
+      height: 310px;
+      border: 2px dashed rgba(0,200,212,0.35);
+      border-radius: 16px;
+      background: rgba(0,200,212,0.04);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .emissary-placeholder-icon {
+      font-size: 64px;
+      /* This will be replaced by the actual merman PNG */
+      line-height: 1;
+      filter: drop-shadow(0 0 12px rgba(0,200,212,0.4));
+    }
+
+    .emissary-placeholder-label {
+      font-size: 11px;
+      color: rgba(0,200,212,0.5);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      text-align: center;
+      padding: 0 16px;
+    }
+
+    .emissary-placeholder-note {
+      font-size: 10px;
+      color: rgba(0,200,212,0.3);
+      text-align: center;
+      padding: 0 12px;
+      line-height: 1.5;
+    }
+
+    /* Action label below the character */
+    .emissary-action-label {
+      font-size: 11px;
+      color: rgba(0,200,212,0.55);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      font-weight: 500;
+      text-align: center;
+      max-width: 220px;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* ── Speech bubble ── */
+    .speech-bubble {
+      position: absolute;
+      top: 22px;
+      right: 22px;
+      max-width: 280px;
+      background: rgba(4,16,32,0.78);
+      border: 1px solid rgba(0,200,212,0.22);
+      border-radius: 16px 16px 4px 16px;
+      padding: 14px 18px;
+      backdrop-filter: blur(10px);
+      animation: fadeIn 0.5s ease-out;
+      z-index: 10;
+    }
+
+    .speech-bubble p {
+      font-size: 13px;
+      color: var(--color-text);
+      line-height: 1.65;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Status bar ── */
+    .status-bar {
+      position: absolute;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 20px;
+      background: rgba(4,16,32,0.65);
+      border: 1px solid rgba(0,200,212,0.12);
+      border-radius: 20px;
+      backdrop-filter: blur(6px);
+      z-index: 10;
+      white-space: nowrap;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--color-text-muted);
+    }
+
+    .status-text {
+      font-size: 11px;
+      color: var(--color-text-muted);
+      font-weight: 500;
+    }
+
+    .weather-label {
+      font-size: 10px;
+      color: rgba(0,200,212,0.38);
+      margin-left: 4px;
+    }
+
+    /* ── Annotation overlays (mockup-only) ── */
+    .annotation {
+      position: absolute;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--color-accent);
+      background: rgba(201,162,39,0.12);
+      border: 1px solid rgba(201,162,39,0.4);
+      border-radius: 6px;
+      padding: 3px 8px;
+      pointer-events: none;
+      z-index: 20;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    /* ── Legend card below the tank ── */
+    .mockup-legend {
+      margin-top: 20px;
+      background: rgba(13,26,46,0.75);
+      border: 1px solid rgba(0,200,212,0.12);
+      border-radius: 14px;
+      padding: 20px 24px;
+    }
+
+    .legend-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--color-primary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 14px;
+    }
+
+    .legend-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 10px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--color-text-muted);
+      line-height: 1.5;
+    }
+
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--color-accent);
+      flex-shrink: 0;
+      margin-top: 4px;
+    }
+
+    /* ── Hover state mockup note ── */
+    .fishtank-emissary:hover .emissary-halo {
+      box-shadow: 0 0 60px rgba(0,200,212,0.25), 0 0 100px rgba(0,200,212,0.1);
+    }
+    .fishtank-emissary:hover .emissary-placeholder {
+      border-color: rgba(0,200,212,0.6);
+      background: rgba(0,200,212,0.08);
+    }
+  </style>
+</head>
+<body>
+  <div class="fishtank-page">
+
+    <!-- Page header -->
+    <h1 class="screen-title">The Fishtank</h1>
+    <p class="screen-subtitle">
+      🐟 Peer into the depths and see what Azurel is up to.
+      <span class="drop-hint">Drop files or folders here — Azurel will catch them!</span>
+    </p>
+
+    <!-- The tank -->
+    <div class="fishtank-tank">
+
+      <!-- Caustic light -->
+      <div class="caustic caustic-1"></div>
+      <div class="caustic caustic-2"></div>
+      <div class="caustic caustic-3"></div>
+
+      <!-- Light rays from surface -->
+      <div class="lightray lightray-1"></div>
+      <div class="lightray lightray-2"></div>
+
+      <!-- Floating particles -->
+      <div class="particle" style="left:8%;top:22%;width:3px;height:3px;background:rgba(0,200,212,0.7);box-shadow:0 0 6px rgba(0,200,212,0.7);animation-duration:7s;animation-delay:0s;"></div>
+      <div class="particle" style="left:24%;top:58%;width:2px;height:2px;background:rgba(0,200,212,0.5);box-shadow:0 0 5px rgba(0,200,212,0.5);animation-duration:9s;animation-delay:1.5s;"></div>
+      <div class="particle" style="left:72%;top:18%;width:3px;height:3px;background:rgba(26,155,138,0.7);box-shadow:0 0 6px rgba(26,155,138,0.7);animation-duration:6s;animation-delay:2s;"></div>
+      <div class="particle" style="left:85%;top:45%;width:2px;height:2px;background:rgba(0,200,212,0.5);box-shadow:0 0 5px rgba(0,200,212,0.5);animation-duration:11s;animation-delay:0.8s;"></div>
+      <div class="particle" style="left:40%;top:72%;width:4px;height:4px;background:rgba(0,200,212,0.4);box-shadow:0 0 8px rgba(0,200,212,0.4);animation-duration:8s;animation-delay:3s;"></div>
+      <div class="particle" style="left:55%;top:30%;width:2px;height:2px;background:rgba(0,200,212,0.6);box-shadow:0 0 5px rgba(0,200,212,0.6);animation-duration:10s;animation-delay:1s;"></div>
+
+      <!-- Bubbles -->
+      <div class="bubble" style="left:12%;width:6px;height:6px;animation-duration:9s;animation-delay:0s;--drift:8px;"></div>
+      <div class="bubble" style="left:28%;width:4px;height:4px;animation-duration:12s;animation-delay:2s;--drift:-6px;"></div>
+      <div class="bubble" style="left:47%;width:8px;height:8px;animation-duration:8s;animation-delay:5s;--drift:10px;"></div>
+      <div class="bubble" style="left:63%;width:5px;height:5px;animation-duration:14s;animation-delay:1s;--drift:-8px;"></div>
+      <div class="bubble" style="left:80%;width:7px;height:7px;animation-duration:10s;animation-delay:3s;--drift:5px;"></div>
+      <div class="bubble" style="left:35%;width:3px;height:3px;animation-duration:11s;animation-delay:7s;--drift:-4px;"></div>
+      <div class="bubble" style="left:90%;width:5px;height:5px;animation-duration:13s;animation-delay:4s;--drift:-7px;"></div>
+
+      <!-- Procedural seabed (inline SVG) -->
+      <svg class="seabed" viewBox="0 0 880 80" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Sandy base layer -->
+        <path d="M0,55 C60,45 120,60 200,50 C280,40 340,55 420,48 C500,41 560,58 640,50 C720,42 800,56 880,50 L880,80 L0,80 Z"
+              fill="rgba(8,30,58,0.9)" />
+        <!-- Darker accent layer -->
+        <path d="M0,65 C80,58 160,70 250,62 C340,54 400,68 500,60 C600,52 680,66 780,58 C820,55 855,62 880,60 L880,80 L0,80 Z"
+              fill="rgba(4,16,32,0.95)" />
+
+        <!-- Seaweed 1 -->
+        <g opacity="0.8">
+          <path d="M90,55 Q85,40 92,30 Q99,20 95,10" stroke="#1a6e3c" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <path d="M90,55 Q82,42 88,34" stroke="#1a6e3c" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <path d="M90,55 Q97,38 93,26" stroke="#22874a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        </g>
+        <!-- Seaweed 2 -->
+        <g opacity="0.7" transform="translate(240,0)">
+          <path d="M0,58 Q-6,44 2,34 Q8,24 5,14" stroke="#167a40" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <path d="M0,58 Q6,45 2,36" stroke="#1d8f4a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        </g>
+        <!-- Seaweed 3 -->
+        <g opacity="0.9" transform="translate(470,0)">
+          <path d="M0,52 Q-5,38 3,26 Q9,16 6,6" stroke="#0d5e30" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <path d="M0,52 Q7,40 3,30" stroke="#1a7a3c" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <path d="M0,52 Q-8,42 -4,32" stroke="#1d8f4a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        </g>
+        <!-- Seaweed 4 -->
+        <g opacity="0.6" transform="translate(650,0)">
+          <path d="M0,56 Q5,44 1,34 Q-3,24 1,14" stroke="#14703a" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <path d="M0,56 Q-6,43 -2,35" stroke="#22874a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        </g>
+        <!-- Seaweed 5 -->
+        <g opacity="0.75" transform="translate(800,0)">
+          <path d="M0,54 Q6,40 2,28 Q-2,18 2,8" stroke="#1a6e3c" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        </g>
+
+        <!-- Rocks -->
+        <ellipse cx="160" cy="70" rx="22" ry="10" fill="rgba(15,35,60,0.9)" />
+        <ellipse cx="155" cy="68" rx="15" ry="7" fill="rgba(20,45,70,0.8)" />
+        <ellipse cx="380" cy="72" rx="18" ry="8" fill="rgba(12,30,55,0.9)" />
+        <ellipse cx="600" cy="70" rx="25" ry="10" fill="rgba(15,35,60,0.85)" />
+        <ellipse cx="720" cy="73" rx="14" ry="6" fill="rgba(18,40,65,0.8)" />
+
+        <!-- Small shells / corals -->
+        <circle cx="110" cy="63" r="3" fill="rgba(0,200,212,0.2)" />
+        <circle cx="113" cy="61" r="2" fill="rgba(0,200,212,0.15)" />
+        <circle cx="310" cy="65" r="2.5" fill="rgba(26,155,138,0.25)" />
+        <circle cx="550" cy="62" r="3" fill="rgba(0,200,212,0.2)" />
+        <circle cx="830" cy="66" r="2" fill="rgba(26,155,138,0.18)" />
+      </svg>
+
+      <!-- ═══════════════════════════════════════
+           THE EMISSARY — merman character slot
+           Replace .emissary-placeholder with:
+           <img class="emissary-img" src="./your-merman.png" alt="Azurel the emissary" />
+           ═══════════════════════════════════════ -->
+      <div class="fishtank-emissary">
+        <!-- Glow halo behind character -->
+        <div class="emissary-halo"></div>
+
+        <!-- PNG placeholder — swap this <div> for <img class="emissary-img" src="your-merman.png" /> -->
+        <div class="emissary-placeholder">
+          <span class="emissary-placeholder-icon">🧜‍♂️</span>
+          <div class="emissary-placeholder-label">Azurel</div>
+          <div class="emissary-placeholder-note">
+            Replace with your transparent<br/>merman PNG here
+          </div>
+        </div>
+
+        <div class="emissary-action-label">Collecting pearls from the seabed</div>
+      </div>
+
+      <!-- Annotation: character slot -->
+      <div class="annotation" style="left:50%;top:10%;transform:translateX(-50%);">
+        ← png slot: ~260×320px, transparent bg
+      </div>
+
+      <!-- Speech bubble -->
+      <div class="speech-bubble">
+        <p>You know, you have very kind eyes. For a surface-dweller.</p>
+      </div>
+
+      <!-- Status bar -->
+      <div class="status-bar">
+        <div class="status-dot"></div>
+        <span class="status-text">Awaiting command</span>
+        <span class="weather-label">☀️ clear</span>
+      </div>
+
+    </div><!-- /tank -->
+
+    <!-- ── Mockup legend ── -->
+    <div class="mockup-legend">
+      <div class="legend-title">Mockup notes — what changes with the PNG upgrade</div>
+      <div class="legend-grid">
+        <div class="legend-item">
+          <div class="legend-dot"></div>
+          <span><strong style="color:var(--color-text)">Emissary slot</strong> — the 60px emoji orb is removed. Your transparent merman PNG renders at ~260×320px, centered and floating.</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot"></div>
+          <span><strong style="color:var(--color-text)">Glow halo</strong> — a soft teal radial glow ring sits behind the character, pulsing gently. Active tasks make it brighter.</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot"></div>
+          <span><strong style="color:var(--color-text)">Drop-shadow filter</strong> — CSS <code style="color:var(--color-primary)">drop-shadow</code> on the &lt;img&gt; gives the character a teal underwater glow without a box.</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot"></div>
+          <span><strong style="color:var(--color-text)">Action label</strong> — small caps status text stays below the character, same as the emoji orb label today.</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot"></div>
+          <span><strong style="color:var(--color-text)">Float animation</strong> — the whole character block gently bobs +/−10px on a 4s loop. Other states (swimming, flexing…) use different keyframes.</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot"></div>
+          <span><strong style="color:var(--color-text)">Speech bubble & status bar</strong> — unchanged. They sit on top of the character layer via z-index.</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /page -->
+</body>
+</html>
