@@ -68,7 +68,12 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
     try {
       if (checkName === 'Node.js' || checkName === 'npm') {
         await invoke(IPC_CHANNELS.OPEN_EXTERNAL, 'https://nodejs.org/en/download/')
-        setFixMessage('Opening the Node.js download page in your browser. Install it, then click "Run Checks" again.')
+        setFixMessage(
+          'Opening the Node.js download page in your browser. Install it, then click "Run Checks" again. ' +
+          'Windows users: after installing Node.js, open PowerShell and run ' +
+          '"Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned" ' +
+          'followed by "npm install -g openclaw@latest" before re-checking.'
+        )
       } else if (checkName === 'git') {
         await invoke(IPC_CHANNELS.OPEN_EXTERNAL, 'https://git-scm.com/downloads')
         setFixMessage('Opening the Git download page in your browser. Install it, then click "Run Checks" again.')
@@ -238,6 +243,42 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
               </ol>
               <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 8 }}>
                 💡 <em>No command line or terminal knowledge required. We handle everything.</em>
+              </p>
+            </div>
+            <div className="setup-wizard__info-box" style={{ marginTop: 12, borderLeft: '3px solid var(--color-primary)' }}>
+              <p style={{ fontSize: 13, color: 'var(--color-text)', lineHeight: 1.6, marginBottom: 6 }}>
+                <strong>🪟 Windows users — first-time setup</strong>
+              </p>
+              <p style={{ fontSize: 12, color: 'var(--color-text-muted)', lineHeight: 1.7, marginBottom: 8 }}>
+                Before installing OpenClaw, Windows PowerShell needs permission to run scripts.
+                Open <strong>PowerShell</strong> (search for it in the Start menu) and run these two commands in order:
+              </p>
+              <code style={{
+                display: 'block',
+                background: 'rgba(0,0,0,0.25)',
+                borderRadius: 4,
+                padding: '6px 10px',
+                fontSize: 12,
+                color: 'var(--color-primary)',
+                marginBottom: 6,
+                wordBreak: 'break-all',
+              }}>
+                Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+              </code>
+              <code style={{
+                display: 'block',
+                background: 'rgba(0,0,0,0.25)',
+                borderRadius: 4,
+                padding: '6px 10px',
+                fontSize: 12,
+                color: 'var(--color-primary)',
+                wordBreak: 'break-all',
+              }}>
+                npm install -g openclaw@latest
+              </code>
+              <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 8 }}>
+                The first command unlocks script execution for your user account only — it does not affect other users on the machine.
+                The second command installs OpenClaw globally so this app can find it.
               </p>
             </div>
           </div>
