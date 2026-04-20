@@ -4,7 +4,6 @@
   "description": "OpenClaw Harbour - Desktop companion for OpenClaw",
   "main": "./out/main/index.js",
   "scripts": {
-    "postinstall": "electron-rebuild || echo 'WARN: electron-rebuild failed — native modules like node-pty may not work. Run npm run rebuild manually.'",
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",

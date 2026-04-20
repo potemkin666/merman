@@ -62,9 +62,13 @@ if [ "$NEED_INSTALL" -eq 1 ]; then
     echo "  🔧  Rebuilding native modules for Electron..."
     echo "  (This makes sure node-pty works correctly.)"
     echo ""
-    npm run rebuild 2>/dev/null || echo "  ⚠️  Native rebuild had warnings (non-fatal — the app will still work)."
-    echo ""
-    echo "  ✅  Rebuild complete!"
+    if npm run rebuild 2>/dev/null; then
+        echo "  ✅  Native modules built successfully!"
+    else
+        echo "  ⚠️  Native module build skipped — compiler toolchain not found."
+        echo "     The terminal will use a basic shell instead."
+        echo "     Install build-essential (Linux) or Xcode CLT (macOS) for full PTY support."
+    fi
     echo ""
 fi
 
