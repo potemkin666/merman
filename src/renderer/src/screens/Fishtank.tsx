@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import type { ServiceStatus, TaskResult } from '../../../shared/types'
+import { SeabedCanvas } from '../components/SeabedCanvas'
 
 interface FishtankProps {
   status: ServiceStatus
@@ -283,6 +284,8 @@ export const Fishtank: React.FC<FishtankProps> = ({ status, recentTasks = [] }) 
   const [bubbles, setBubbles] = useState<Array<{ id: number; x: number; size: number; delay: number }>>([])
   const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number; size: number; delay: number }>>([])
   const [clickCount, setClickCount] = useState(0)
+  const tankRef = useRef<HTMLDivElement>(null)
+  const [tankSize, setTankSize] = useState({ width: 800, height: 420 })
 
   // Reset click count after 20 seconds of no interaction
   useEffect(() => {
@@ -355,6 +358,20 @@ export const Fishtank: React.FC<FishtankProps> = ({ status, recentTasks = [] }) 
     return () => { clearInterval(bInterval); clearInterval(pInterval) }
   }, [spawnBubbles, spawnParticles])
 
+  // Track tank dimensions for seabed canvas
+  useEffect(() => {
+    const el = tankRef.current
+    if (!el) return
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect
+        setTankSize({ width: Math.floor(width), height: Math.floor(height) })
+      }
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
   const emissaryStyle = getEmissaryStyle(animation, status)
 
   return (
@@ -368,6 +385,7 @@ export const Fishtank: React.FC<FishtankProps> = ({ status, recentTasks = [] }) 
 
       {/* The tank */}
       <div
+        ref={tankRef}
         role="img"
         aria-label={`Fishtank: the emissary is ${ANIMATION_LABELS[animation].toLowerCase()}. Status: ${getStatusText(status)}.`}
         style={{
@@ -433,15 +451,8 @@ export const Fishtank: React.FC<FishtankProps> = ({ status, recentTasks = [] }) 
           }} />
         ))}
 
-        {/* Seabed */}
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 70, background: 'linear-gradient(180deg, transparent, rgba(8,18,35,0.95))', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: 5, left: '8%', fontSize: 22, opacity: 0.3 }}>🪸</div>
-        <div style={{ position: 'absolute', bottom: 8, left: '25%', fontSize: 14, opacity: 0.2 }}>🌿</div>
-        <div style={{ position: 'absolute', bottom: 4, right: '12%', fontSize: 18, opacity: 0.25 }}>🐚</div>
-        <div style={{ position: 'absolute', bottom: 10, left: '55%', fontSize: 12, opacity: 0.18 }}>🪨</div>
-        <div style={{ position: 'absolute', bottom: 6, right: '35%', fontSize: 16, opacity: 0.2 }}>🪸</div>
-        <div style={{ position: 'absolute', bottom: 12, left: '42%', fontSize: 10, opacity: 0.15 }}>✨</div>
-        <div style={{ position: 'absolute', bottom: 2, left: '72%', fontSize: 13, opacity: 0.2 }}>🌊</div>
+        {/* Procedural seabed */}
+        <SeabedCanvas width={tankSize.width} height={tankSize.height} seed={42} />
 
         {/* The Emissary — clickable for interaction */}
         <div

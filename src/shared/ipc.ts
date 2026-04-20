@@ -13,6 +13,12 @@ export const IPC_CHANNELS = {
   GET_LOGS: 'get-logs',
   ON_LOG: 'on-log',
   ON_STATUS_CHANGE: 'on-status-change',
+  TERMINAL_SPAWN: 'terminal-spawn',
+  TERMINAL_INPUT: 'terminal-input',
+  TERMINAL_RESIZE: 'terminal-resize',
+  TERMINAL_KILL: 'terminal-kill',
+  TERMINAL_OUTPUT: 'terminal-output',
+  TERMINAL_EXIT: 'terminal-exit',
 } as const
 
 export type IpcChannel = typeof IPC_CHANNELS[keyof typeof IPC_CHANNELS]

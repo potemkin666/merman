@@ -13,6 +13,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'setup', label: 'Setup', icon: '⚙️', tooltip: 'First time? This wizard walks you through getting OpenClaw ready. No terminal needed.' },
   { id: 'dispatch', label: 'Dispatch', icon: '🔱', tooltip: 'Send a task to the emissary. Type what you want done in plain English.' },
   { id: 'fishtank', label: 'Fishtank', icon: '🐠', tooltip: 'Peer into the depths! Watch the emissary swim around and see what he is up to.' },
+  { id: 'deepdive', label: 'Deep Dive', icon: '🤿', tooltip: 'A real terminal inside the app — the emissary narrates every command you run.' },
   { id: 'tidelog', label: 'Tide Log', icon: '🌊', tooltip: 'A log of everything that happened — in simple language. Great for seeing what went right or wrong.' },
   { id: 'deepconfig', label: 'Deep Config', icon: '🔧', tooltip: 'Change settings like file paths, AI model, API key, and saved presets. For when you need to tweak things.' },
 ]

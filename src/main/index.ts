@@ -4,6 +4,7 @@ import type { ChildProcess } from 'child_process'
 import { IPC_CHANNELS } from '../shared/ipc'
 import { checkEnvironment, detectOpenClawPath } from './services/envChecker'
 import { runCommand, killProcess, validatePath } from './services/processRunner'
+import { spawnTerminal, writeTerminal, resizeTerminal, killTerminal } from './services/terminalService'
 import { getConfig, setConfig } from './services/configService'
 import { getApiKey, setApiKey } from './services/keychainService'
 import { getLogs, addLog } from './services/logService'
@@ -57,6 +58,7 @@ app.on('before-quit', () => {
     killProcess(serviceProcess)
     serviceProcess = null
   }
+  killTerminal()
 })
 
 // --- IPC Handlers ---
@@ -192,6 +194,37 @@ ipcMain.handle(IPC_CHANNELS.DISPATCH_TASK, async (_event, { prompt, mode, openCl
     mainWindow?.webContents.send(IPC_CHANNELS.ON_STATUS_CHANGE, 'error')
     return { ok: false, error: msg, explanation: translateError(msg, 'dispatch') }
   }
+})
+
+// --- Terminal IPC Handlers ---
+
+ipcMain.handle(IPC_CHANNELS.TERMINAL_SPAWN, async (_event, cwd: string) => {
+  const dir = cwd || process.cwd()
+  const pathCheck = validatePath(dir)
+  if (!pathCheck.ok) {
+    addLog('error', `Terminal spawn path rejected: ${pathCheck.error}`)
+    return { ok: false, error: pathCheck.error }
+  }
+  const spawned = spawnTerminal(dir, mainWindow)
+  if (spawned) {
+    addLog('info', `Terminal session started in ${dir}`)
+    return { ok: true }
+  }
+  return { ok: false, error: 'Terminal session already running.' }
+})
+
+ipcMain.handle(IPC_CHANNELS.TERMINAL_INPUT, async (_event, data: string) => {
+  writeTerminal(data)
+})
+
+ipcMain.handle(IPC_CHANNELS.TERMINAL_RESIZE, async (_event, cols: number, rows: number) => {
+  resizeTerminal(cols, rows)
+})
+
+ipcMain.handle(IPC_CHANNELS.TERMINAL_KILL, async () => {
+  killTerminal()
+  addLog('info', 'Terminal session ended')
+  return { ok: true }
 })
 
 // --- Error Translation ---
