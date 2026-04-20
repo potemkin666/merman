@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import type { ServiceStatus } from '../../../shared/types'
+import type { ServiceStatus, TaskResult } from '../../../shared/types'
 
 interface FishtankProps {
   status: ServiceStatus
+  recentTasks?: TaskResult[]
 }
 
 // --- Expanded idle animations ---
@@ -180,13 +181,122 @@ function getStatusText(status: ServiceStatus): string {
   }
 }
 
-export const Fishtank: React.FC<FishtankProps> = ({ status }) => {
+// --- Contextual click responses ---
+// The emissary reacts differently based on status and history
+
+function getClickResponse(status: ServiceStatus, recentTasks: TaskResult[], clickCount: number): string {
+  const lastTask = recentTasks[0]
+  const errorCount = recentTasks.filter(t => t.status === 'error').length
+  const totalDone = recentTasks.filter(t => t.status === 'done').length
+
+  // Dramatic refusal pool (rare)
+  if (clickCount > 5) {
+    const annoyed = [
+      'You keep poking the glass. I am trying to concentrate.',
+      '*sighs dramatically* Yes? Again?',
+      'If you click me one more time I am going back to the Mariana Trench.',
+      'I am a professional emissary, not a stress ball.',
+      '*gives you The Look*',
+      'Into the Mariana Trench? Again? I just got my scales polished...',
+    ]
+    return annoyed[Math.floor(Math.random() * annoyed.length)]
+  }
+
+  // Status-aware responses
+  if (status === 'running') {
+    const busy = [
+      'I am working! Give me a moment...',
+      '*holds up a fin* Almost there...',
+      'Patience. The deep does not yield quickly.',
+      'The currents are strong but I am stronger. Almost done.',
+      'Do not rush the deep. Good things take time.',
+    ]
+    return busy[Math.floor(Math.random() * busy.length)]
+  }
+
+  if (status === 'error') {
+    const troubled = [
+      'Things got rough down there. Check the Tide Log for clues.',
+      'I tried my best, truly. The sea was not kind this time.',
+      '*looks sheepish* That... did not go as planned.',
+      'Even the best emissaries have rough tides. Shall we try again?',
+    ]
+    return troubled[Math.floor(Math.random() * troubled.length)]
+  }
+
+  // History-aware responses
+  if (lastTask && lastTask.status === 'error') {
+    const afterError = [
+      'Last time was rough... but I have recovered. Ready for another dive.',
+      'I do not like to talk about what happened last time. Let us move forward.',
+      '*nervously* So... that last task... shall we try something different?',
+    ]
+    return afterError[Math.floor(Math.random() * afterError.length)]
+  }
+
+  if (errorCount >= 3) {
+    const manyErrors = [
+      `${errorCount} failed tasks? The sea is testing us. Perhaps check the configuration?`,
+      'I keep running into trouble. Maybe the Deep Config needs adjusting?',
+      'The currents are hostile lately. Something might be misconfigured.',
+    ]
+    return manyErrors[Math.floor(Math.random() * manyErrors.length)]
+  }
+
+  if (totalDone >= 5) {
+    const experienced = [
+      `${totalDone} tasks completed! We make a good duo, you and I.`,
+      'Another click? You must enjoy my company. The feeling is mutual.',
+      'We have been through a lot together. I am proud of what we have accomplished.',
+      `${totalDone} successful dives! I am getting quite fond of this arrangement.`,
+    ]
+    return experienced[Math.floor(Math.random() * experienced.length)]
+  }
+
+  if (totalDone === 0 && recentTasks.length === 0) {
+    const fresh = [
+      'Hello! I am your emissary. Click "Dispatch" in the sidebar to send me on a task!',
+      'New around here? Head to Setup first, then Dispatch to give me something to do.',
+      'I am ready for my first mission! Just say the word.',
+      '*waves enthusiastically* A new commander! I will not disappoint.',
+    ]
+    return fresh[Math.floor(Math.random() * fresh.length)]
+  }
+
+  // Default click responses
+  const defaultClicks = [
+    'Yes? Did you need something?',
+    '*looks up from his coral collection* Oh, hello!',
+    'I am at your service. Head to Dispatch if you have a task.',
+    'Click me again and I might just blush.',
+    '*taps the glass from the inside* I see you!',
+    'You know, most people just send tasks. You actually visit. I like that.',
+    'The depths are calm. A perfect time to dispatch a new task.',
+  ]
+  return defaultClicks[Math.floor(Math.random() * defaultClicks.length)]
+}
+
+export const Fishtank: React.FC<FishtankProps> = ({ status, recentTasks = [] }) => {
   const [animation, setAnimation] = useState<EmissaryAnimation>('floating')
   const [saying, setSaying] = useState('')
   const [sayingKey, setSayingKey] = useState(0)
   const [bubbles, setBubbles] = useState<Array<{ id: number; x: number; size: number; delay: number }>>([])
   const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number; size: number; delay: number }>>([])
+  const [clickCount, setClickCount] = useState(0)
 
+  // Reset click count after 20 seconds of no interaction
+  useEffect(() => {
+    if (clickCount === 0) return
+    const t = setTimeout(() => setClickCount(0), 20000)
+    return () => clearTimeout(t)
+  }, [clickCount])
+
+  const handleEmissaryClick = useCallback(() => {
+    setClickCount(c => c + 1)
+    const response = getClickResponse(status, recentTasks, clickCount)
+    setSaying(response)
+    setSayingKey(k => k + 1)
+  }, [status, recentTasks, clickCount])
   // Cycle animations every 5–10 seconds
   useEffect(() => {
     const pick = () => {
@@ -333,8 +443,14 @@ export const Fishtank: React.FC<FishtankProps> = ({ status }) => {
         <div style={{ position: 'absolute', bottom: 12, left: '42%', fontSize: 10, opacity: 0.15 }}>✨</div>
         <div style={{ position: 'absolute', bottom: 2, left: '72%', fontSize: 13, opacity: 0.2 }}>🌊</div>
 
-        {/* The Emissary */}
-        <div style={{
+        {/* The Emissary — clickable for interaction */}
+        <div
+          onClick={handleEmissaryClick}
+          role="button"
+          tabIndex={0}
+          aria-label="Click the emissary to interact"
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleEmissaryClick() } }}
+          style={{
           position: 'absolute',
           top: '45%',
           left: '50%',
@@ -343,6 +459,7 @@ export const Fishtank: React.FC<FishtankProps> = ({ status }) => {
           flexDirection: 'column',
           alignItems: 'center',
           gap: 12,
+          cursor: 'pointer',
           ...emissaryStyle,
         }}>
           <div style={{

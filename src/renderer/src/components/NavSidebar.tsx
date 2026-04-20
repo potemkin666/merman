@@ -36,8 +36,36 @@ export const NavSidebar: React.FC<NavSidebarProps> = ({ active, onNavigate }) =>
       paddingTop: 24,
       gap: 4,
       flexShrink: 0,
+      position: 'relative',
+      overflow: 'hidden',
     }}>
-      <div style={{ marginBottom: 24, fontSize: 24 }} aria-hidden="true">🔱</div>
+      {/* Animated water caustic overlay */}
+      <div aria-hidden="true" style={{
+        position: 'absolute',
+        inset: 0,
+        pointerEvents: 'none',
+        zIndex: 0,
+      }}>
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'radial-gradient(ellipse at 40% 20%, rgba(0,200,212,0.06) 0%, transparent 60%)',
+          animation: 'sidebarCaustic1 7s ease-in-out infinite alternate',
+        }} />
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'radial-gradient(ellipse at 60% 70%, rgba(26,155,138,0.05) 0%, transparent 50%)',
+          animation: 'sidebarCaustic2 11s ease-in-out infinite alternate-reverse',
+        }} />
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'radial-gradient(ellipse at 30% 90%, rgba(0,100,180,0.04) 0%, transparent 45%)',
+          animation: 'sidebarCaustic3 9s ease-in-out infinite alternate',
+        }} />
+      </div>
+      <div style={{ marginBottom: 24, fontSize: 24, position: 'relative', zIndex: 1 }} aria-hidden="true">🔱</div>
       {NAV_ITEMS.map((item) => (
         <Tooltip key={item.id} text={item.tooltip} position="right" maxWidth={240}>
           <button
@@ -60,6 +88,8 @@ export const NavSidebar: React.FC<NavSidebarProps> = ({ active, onNavigate }) =>
               cursor: 'pointer',
               transition: 'all 0.2s',
               boxShadow: active === item.id ? 'var(--glow-primary)' : 'none',
+              position: 'relative',
+              zIndex: 1,
             }}
           >
             <span aria-hidden="true">{item.icon}</span>

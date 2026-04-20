@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react'
-import { useIpc } from '../hooks/useIpc'
+import React, { useState, useEffect, useRef } from 'react'
+import { useIpc, useIpcListener } from '../hooks/useIpc'
 import { Tooltip } from '../components/Tooltip'
 import { HelpHint } from '../components/Tooltip'
 import { IPC_CHANNELS } from '../../../shared/ipc'
-import type { EnvCheckResult, AppConfig, CommandResult } from '../../../shared/types'
+import type { EnvCheckResult, AppConfig, CommandResult, LogEntry } from '../../../shared/types'
 
 interface SetupWizardProps {
   config: AppConfig
@@ -42,6 +42,31 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
   const [path, setPath] = useState(config.openClawPath)
   const [installing, setInstalling] = useState(false)
   const [installResult, setInstallResult] = useState<CommandResult | null>(null)
+  const [installLogs, setInstallLogs] = useState<string[]>([])
+  const [elapsed, setElapsed] = useState(0)
+  const logBottomRef = useRef<HTMLDivElement>(null)
+
+  // Stream ON_LOG events into the install mini-log while installing
+  useIpcListener(IPC_CHANNELS.ON_LOG, (...args: unknown[]) => {
+    if (!installing) return
+    const entry = args[0] as LogEntry
+    if (entry?.message) {
+      setInstallLogs((prev) => [...prev.slice(-200), entry.message.trim()])
+    }
+  }, [installing])
+
+  // Elapsed time counter during install
+  useEffect(() => {
+    if (!installing) return
+    setElapsed(0)
+    const t = setInterval(() => setElapsed((s) => s + 1), 1000)
+    return () => clearInterval(t)
+  }, [installing])
+
+  // Auto-scroll install log to bottom
+  useEffect(() => {
+    logBottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [installLogs])
 
   const checkPrereqs = async () => {
     setChecking(true)
@@ -75,6 +100,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
   const runInstall = async () => {
     setInstalling(true)
     setInstallResult(null)
+    setInstallLogs([])
     await onSave({ openClawPath: path })
     const result = await invoke<CommandResult>(IPC_CHANNELS.RUN_SETUP, path)
     setInstallResult(result)
@@ -287,17 +313,59 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
               Almost there! We will install the packages OpenClaw needs. Just click the button below and wait.
               This might take a minute or two depending on your internet speed.
             </p>
-            {!installResult && (
+            {!installResult && !installing && (
               <Tooltip text={!path ? 'Go back and set the OpenClaw path first.' : 'Click to download and install all required packages. This runs npm install inside your OpenClaw folder.'}>
                 <button onClick={runInstall} disabled={installing || !path} aria-label={installing ? 'Installing dependencies' : 'Install dependencies now'} style={{
                   ...btnPrimary,
                   opacity: installing || !path ? 0.5 : 1,
                   cursor: installing || !path ? 'not-allowed' : 'pointer',
                 }}>
-                  {installing ? '⏳ Installing... (this may take a minute)' : '📦 Install Now'}
+                  📦 Install Now
                 </button>
               </Tooltip>
             )}
+
+            {/* Live install progress */}
+            {installing && (
+              <div style={{ marginTop: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                  <span style={{ fontSize: 18, animation: 'pulse 1.5s infinite' }}>⏳</span>
+                  <span style={{ fontSize: 14, color: 'var(--color-primary)', fontWeight: 600 }}>
+                    Installing... ({Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, '0')} elapsed)
+                  </span>
+                </div>
+                <div
+                  role="log"
+                  aria-label="Install output"
+                  aria-live="polite"
+                  style={{
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: 10,
+                    maxHeight: 160,
+                    overflowY: 'auto',
+                    fontFamily: 'monospace',
+                    fontSize: 11,
+                    lineHeight: 1.5,
+                    color: 'var(--color-text-muted)',
+                  }}
+                >
+                  {installLogs.length === 0 ? (
+                    <span style={{ opacity: 0.5 }}>Waiting for output...</span>
+                  ) : (
+                    installLogs.map((line, i) => (
+                      <div key={i} style={{ wordBreak: 'break-all' }}>{line}</div>
+                    ))
+                  )}
+                  <div ref={logBottomRef} />
+                </div>
+                <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 8, opacity: 0.7 }}>
+                  💡 This output is the same as what you would see in a terminal. It is normal to see warnings.
+                </p>
+              </div>
+            )}
+
             {installResult?.ok && (
               <div style={{
                 padding: '12px 16px',

@@ -3,7 +3,7 @@ import { join } from 'path'
 import type { ChildProcess } from 'child_process'
 import { IPC_CHANNELS } from '../shared/ipc'
 import { checkEnvironment, detectOpenClawPath } from './services/envChecker'
-import { runCommand, killProcess } from './services/processRunner'
+import { runCommand, killProcess, validatePath } from './services/processRunner'
 import { getConfig, setConfig } from './services/configService'
 import { getApiKey, setApiKey } from './services/keychainService'
 import { getLogs, addLog } from './services/logService'
@@ -85,6 +85,11 @@ ipcMain.handle(IPC_CHANNELS.SET_API_KEY, (_event, key: string) => {
 ipcMain.handle(IPC_CHANNELS.GET_LOGS, () => getLogs())
 
 ipcMain.handle(IPC_CHANNELS.RUN_SETUP, async (_event, openClawPath: string) => {
+  const pathCheck = validatePath(openClawPath)
+  if (!pathCheck.ok) {
+    addLog('error', `Setup path rejected: ${pathCheck.error}`)
+    return { ok: false, error: pathCheck.error, explanation: { what: 'The path is invalid.', cause: pathCheck.error || 'Unknown', action: 'Fix the OpenClaw path in Deep Config or Setup Wizard.', retryable: true } }
+  }
   try {
     addLog('info', `Running npm install in ${openClawPath}`)
     await runCommand('npm', ['install'], openClawPath, mainWindow)
@@ -102,6 +107,11 @@ ipcMain.handle(IPC_CHANNELS.RUN_SETUP, async (_event, openClawPath: string) => {
 })
 
 ipcMain.handle(IPC_CHANNELS.START_SERVICE, async (_event, openClawPath: string) => {
+  const pathCheck = validatePath(openClawPath)
+  if (!pathCheck.ok) {
+    addLog('error', `Start path rejected: ${pathCheck.error}`)
+    return { ok: false, error: pathCheck.error }
+  }
   try {
     if (serviceProcess) {
       return { ok: false, error: 'Service is already running.' }
@@ -136,6 +146,11 @@ ipcMain.handle(IPC_CHANNELS.STOP_SERVICE, async () => {
 })
 
 ipcMain.handle(IPC_CHANNELS.RESTART_SERVICE, async (_event, openClawPath: string) => {
+  const pathCheck = validatePath(openClawPath)
+  if (!pathCheck.ok) {
+    addLog('error', `Restart path rejected: ${pathCheck.error}`)
+    return { ok: false, error: pathCheck.error }
+  }
   if (serviceProcess) {
     killProcess(serviceProcess)
     serviceProcess = null
@@ -153,13 +168,19 @@ ipcMain.handle(IPC_CHANNELS.RESTART_SERVICE, async (_event, openClawPath: string
 })
 
 ipcMain.handle(IPC_CHANNELS.DISPATCH_TASK, async (_event, { prompt, mode, openClawPath }) => {
+  const resolvedPath = openClawPath || process.cwd()
+  const pathCheck = validatePath(resolvedPath)
+  if (!pathCheck.ok) {
+    addLog('error', `Dispatch path rejected: ${pathCheck.error}`)
+    return { ok: false, error: pathCheck.error, explanation: { what: 'The path is invalid.', cause: pathCheck.error || 'Unknown', action: 'Fix the OpenClaw path in Deep Config.', retryable: true } }
+  }
   try {
     addLog('info', `Dispatching task: ${prompt.substring(0, 60)}...`)
     mainWindow?.webContents.send(IPC_CHANNELS.ON_STATUS_CHANGE, 'running')
     const output = await runCommand(
       'node',
       ['index.js', '--prompt', JSON.stringify(prompt), '--mode', mode],
-      openClawPath || process.cwd(),
+      resolvedPath,
       mainWindow
     )
     addLog('info', 'Task completed')
