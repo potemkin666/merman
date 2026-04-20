@@ -289,6 +289,29 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
               aria-label="OpenClaw directory path"
               style={inputStyle}
             />
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <Tooltip text="Open a folder picker to select the OpenClaw directory. Easier than typing!">
+                <button
+                  onClick={async () => {
+                    const selected = await invoke<string>(IPC_CHANNELS.BROWSE_FOLDER)
+                    if (selected) setPath(selected)
+                  }}
+                  aria-label="Browse for OpenClaw directory"
+                  style={{
+                    padding: '6px 14px',
+                    background: 'rgba(0,200,212,0.1)',
+                    color: 'var(--color-primary)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                  }}
+                >
+                  📁 Browse…
+                </button>
+              </Tooltip>
+            </div>
             <div style={{ marginTop: 12, padding: '12px 16px', background: 'rgba(0,200,212,0.05)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(0,200,212,0.1)' }}>
               <p style={{ fontSize: 12, color: 'var(--color-text-muted)', lineHeight: 1.7 }}>
                 <strong style={{ color: 'var(--color-text)' }}>💡 How to find this path:</strong><br />

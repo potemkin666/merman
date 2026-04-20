@@ -10,25 +10,31 @@ import { DeepDive } from './screens/DeepDive'
 import { TideLog } from './screens/TideLog'
 import { DeepConfig } from './screens/DeepConfig'
 import { useAppState } from './hooks/useAppState'
-import { isElectronAvailable } from './hooks/useIpc'
-
-const WELCOME_KEY = 'openclaw-harbor-welcome-seen'
+import { isElectronAvailable, useIpc } from './hooks/useIpc'
+import { IPC_CHANNELS } from '../../shared/ipc'
 
 export default function App() {
   const [page, setPage] = useState('harbor')
   const electronAvailable = isElectronAvailable()
   const { config, logs, status, recentTasks, loading, updateConfig, addTask, setStatus } = useAppState()
+  const { invoke } = useIpc()
   const [showWelcome, setShowWelcome] = useState(false)
 
   useEffect(() => {
-    if (!loading && !localStorage.getItem(WELCOME_KEY)) {
-      setShowWelcome(true)
+    if (!loading) {
+      invoke<boolean>(IPC_CHANNELS.GET_WELCOME_SEEN).then((seen) => {
+        if (!seen) setShowWelcome(true)
+      }).catch(() => {
+        // Fallback: if IPC fails, don't show welcome
+      })
     }
-  }, [loading])
+  }, [loading, invoke])
 
   const dismissWelcome = () => {
     setShowWelcome(false)
-    localStorage.setItem(WELCOME_KEY, 'true')
+    invoke(IPC_CHANNELS.SET_WELCOME_SEEN).catch(() => {
+      // Best-effort persist
+    })
   }
 
   // If the Electron bridge is not available, show a helpful error screen

@@ -133,7 +133,28 @@ export const DeepConfig: React.FC<DeepConfigProps> = ({ config, onSave }) => {
             <input type="text" value={form.openClawPath}
               onChange={(e) => setForm((f) => ({ ...f, openClawPath: e.target.value }))}
               placeholder="/path/to/openclaw" aria-label="OpenClaw installation path" style={inputStyle} />
-            <div style={{ marginTop: 6 }}>
+            <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+              <Tooltip text="Open a folder picker to select the OpenClaw directory. Easier than typing!">
+                <button
+                  onClick={async () => {
+                    const selected = await invoke<string>(IPC_CHANNELS.BROWSE_FOLDER)
+                    if (selected) setForm((f) => ({ ...f, openClawPath: selected }))
+                  }}
+                  aria-label="Browse for OpenClaw directory"
+                  style={{
+                    padding: '6px 14px',
+                    background: 'rgba(0,200,212,0.1)',
+                    color: 'var(--color-primary)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                  }}
+                >
+                  📁 Browse…
+                </button>
+              </Tooltip>
               <Tooltip text="Scan common folders on your computer to find an OpenClaw installation automatically.">
                 <button
                   onClick={handleAutoDetect}
@@ -163,6 +184,29 @@ export const DeepConfig: React.FC<DeepConfigProps> = ({ config, onSave }) => {
             <input type="text" value={form.workspacePath}
               onChange={(e) => setForm((f) => ({ ...f, workspacePath: e.target.value }))}
               placeholder="/path/to/workspace (optional)" aria-label="Workspace path" style={inputStyle} />
+            <div style={{ marginTop: 6 }}>
+              <Tooltip text="Open a folder picker to select a workspace directory.">
+                <button
+                  onClick={async () => {
+                    const selected = await invoke<string>(IPC_CHANNELS.BROWSE_FOLDER)
+                    if (selected) setForm((f) => ({ ...f, workspacePath: selected }))
+                  }}
+                  aria-label="Browse for workspace directory"
+                  style={{
+                    padding: '6px 14px',
+                    background: 'rgba(0,200,212,0.1)',
+                    color: 'var(--color-primary)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                  }}
+                >
+                  📁 Browse…
+                </button>
+              </Tooltip>
+            </div>
           </div>
         </div>
       </section>
