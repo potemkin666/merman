@@ -26,6 +26,8 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
   const [pathError, setPathError] = useState<string | null>(null)
   const [validatingPath, setValidatingPath] = useState(false)
   const [pathValid, setPathValid] = useState(false)
+  const [fixingCheck, setFixingCheck] = useState<string | null>(null)
+  const [fixMessage, setFixMessage] = useState<string | null>(null)
 
   const MAX_INSTALL_LOG_LINES = 200
 
@@ -59,6 +61,44 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
   }
 
   const allPrereqsOk = envResults.length > 0 && envResults.every((r) => r.ok)
+
+  const fixCheck = async (checkName: string) => {
+    setFixingCheck(checkName)
+    setFixMessage(null)
+    try {
+      if (checkName === 'Node.js' || checkName === 'npm') {
+        await invoke(IPC_CHANNELS.OPEN_EXTERNAL, 'https://nodejs.org/en/download/')
+        setFixMessage('Opening the Node.js download page in your browser. Install it, then click "Run Checks" again.')
+      } else if (checkName === 'git') {
+        await invoke(IPC_CHANNELS.OPEN_EXTERNAL, 'https://git-scm.com/downloads')
+        setFixMessage('Opening the Git download page in your browser. Install it, then click "Run Checks" again.')
+      } else if (checkName === 'OpenClaw Directory') {
+        // Try auto-detection first
+        const detected = await invoke<string>(IPC_CHANNELS.DETECT_PATH)
+        if (detected) {
+          await onSave({ openClawPath: detected })
+          setPath(detected)
+          setFixMessage(`Found OpenClaw at ${detected}. Path saved — re-checking now…`)
+          await checkPrereqs()
+        } else {
+          // Fall back to browse dialog
+          const selected = await invoke<string>(IPC_CHANNELS.BROWSE_FOLDER)
+          if (selected) {
+            await onSave({ openClawPath: selected })
+            setPath(selected)
+            setFixMessage(`Path set to ${selected}. Re-checking now…`)
+            await checkPrereqs()
+          } else {
+            setFixMessage('No folder selected. You can also set the path manually on the next step.')
+          }
+        }
+      } else if (checkName === 'OpenClaw Config') {
+        setFixMessage('A config file needs to be created inside your OpenClaw folder. Check the OpenClaw documentation for the required format.')
+      }
+    } finally {
+      setFixingCheck(null)
+    }
+  }
 
   // Auto-run prereq checks when entering step 1
   const prereqsTriggered = React.useRef(false)
@@ -211,13 +251,18 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
             </h2>
             <p style={{ color: 'var(--color-text-muted)', fontSize: 13, marginBottom: 16, lineHeight: 1.6 }}>
               We need a few things installed on your computer. Click the button below and we will check automatically.
-              If anything is missing, we will tell you exactly how to fix it.
+              If anything is missing, we will fix it for you.
             </p>
             <Tooltip text="Click this to scan your system. It checks for Node.js (runs JavaScript), npm (installs packages), and git (version control). Takes about 2 seconds.">
               <button onClick={checkPrereqs} disabled={checking} aria-label={checking ? 'Checking prerequisites' : 'Run prerequisite checks'} className="btn btn--primary">
                 {checking ? '⏳ Checking...' : '🔍 Run Checks'}
               </button>
             </Tooltip>
+            {fixMessage && (
+              <div className="setup-wizard__status-banner--warning" style={{ marginTop: 12 }}>
+                ℹ️ {fixMessage}
+              </div>
+            )}
             {envResults.length > 0 && (
               <div className="setup-wizard__env-results">
                 {envResults.map((r) => (
@@ -240,13 +285,34 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
                           {r.message}
                         </p>
                       )}
+                      {!r.ok && (
+                        <Tooltip text={
+                          r.name === 'Node.js' || r.name === 'npm'
+                            ? 'Opens the Node.js download page in your browser so you can install it.'
+                            : r.name === 'git'
+                            ? 'Opens the Git download page in your browser so you can install it.'
+                            : r.name === 'OpenClaw Directory'
+                            ? 'Tries to find OpenClaw on your computer automatically. If it cannot be found, a folder picker will open.'
+                            : 'Shows what you need to do to fix this.'
+                        }>
+                          <button
+                            onClick={() => fixCheck(r.name)}
+                            disabled={fixingCheck === r.name || checking}
+                            aria-label={`Fix ${r.name}`}
+                            className="btn btn--warning"
+                            style={{ marginTop: 8, fontSize: 12, padding: '5px 14px' }}
+                          >
+                            {fixingCheck === r.name ? '⏳ Fixing…' : '🔧 Fix'}
+                          </button>
+                        </Tooltip>
+                      )}
                     </div>
                   </div>
                 ))}
                 {!allPrereqsOk && (
                   <div className="setup-wizard__status-banner--warning">
-                    <strong>Some checks did not pass.</strong> Install the missing tools using the instructions above,
-                    then click &quot;Run Checks&quot; again. You can still continue, but the install step might fail.
+                    <strong>Some checks did not pass.</strong> Click &quot;🔧 Fix&quot; next to any failing item and we will sort it out.
+                    Then click &quot;Run Checks&quot; again to confirm.
                   </div>
                 )}
                 {allPrereqsOk && (
