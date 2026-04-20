@@ -53,20 +53,24 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
   const allPrereqsOk = envResults.length > 0 && envResults.every((r) => r.ok)
 
   // Auto-run prereq checks when entering step 1
+  const prereqsTriggered = React.useRef(false)
   useEffect(() => {
-    if (step === 1 && envResults.length === 0 && !checking) {
+    if (step === 1 && !prereqsTriggered.current && envResults.length === 0 && !checking) {
+      prereqsTriggered.current = true
       checkPrereqs()
     }
-  }, [step])
+  }, [step, envResults.length, checking])
 
   // Auto-detect OpenClaw path when entering step 2
+  const detectTriggered = React.useRef(false)
   useEffect(() => {
-    if (step === 2 && !path) {
+    if (step === 2 && !detectTriggered.current && !path) {
+      detectTriggered.current = true
       invoke<string>(IPC_CHANNELS.DETECT_PATH).then((detected) => {
         if (detected) setPath(detected)
       })
     }
-  }, [step])
+  }, [step, path, invoke])
 
   const runInstall = async () => {
     setInstalling(true)

@@ -5,27 +5,21 @@ import type { EnvCheckResult } from '../../shared/types'
 import { getConfig } from './configService'
 
 function checkCommand(name: string, cmd: string, versionFlag = '--version'): Promise<EnvCheckResult> {
+  const notFoundResult: EnvCheckResult = {
+    name,
+    ok: false,
+    message: `${name} not found. Install it and make sure it is available in your PATH.`,
+  }
   return new Promise((resolve) => {
     const child = exec(`${cmd} ${versionFlag}`, { encoding: 'utf8', timeout: 5000 }, (err, stdout) => {
       if (err) {
-        resolve({
-          name,
-          ok: false,
-          message: `${name} not found. Install it and make sure it is available in your PATH.`,
-        })
+        resolve(notFoundResult)
       } else {
         const version = stdout.trim().split('\n')[0].replace(/^v/, '')
         resolve({ name, version, ok: true })
       }
     })
-    // Safety: kill the child process if it somehow outlives the timeout
-    child.on('error', () => {
-      resolve({
-        name,
-        ok: false,
-        message: `${name} not found. Install it and make sure it is available in your PATH.`,
-      })
-    })
+    child.on('error', () => resolve(notFoundResult))
   })
 }
 
