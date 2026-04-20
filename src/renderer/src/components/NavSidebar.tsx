@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useCallback } from 'react'
 import { Tooltip } from './Tooltip'
 import { useConfig } from '../hooks/useConfig'
 
@@ -19,14 +19,62 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'deepconfig', label: 'Deep Config', icon: '🔧', tooltip: () => 'Change settings like file paths, AI model, API key, and saved presets. For when you need to tweak things.' },
 ]
 
+interface ClickBubble {
+  id: number
+  x: number
+  y: number
+  size: number
+  duration: number
+  delay: number
+}
+
 interface NavSidebarProps {
   active: string
   onNavigate: (id: string) => void
 }
 
+let bubbleIdCounter = 0
+
 export const NavSidebar: React.FC<NavSidebarProps> = ({ active, onNavigate }) => {
   const { config } = useConfig()
   const name = config.emissaryName || 'Azurel'
+  const [clickBubbles, setClickBubbles] = useState<ClickBubble[]>([])
+
+  const spawnBubbles = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const navRect = e.currentTarget.closest('nav')?.getBoundingClientRect()
+    if (!navRect) return
+
+    // Spawn 5–8 tiny bubbles from the button center, relative to the nav
+    const centerX = rect.left - navRect.left + rect.width / 2
+    const centerY = rect.top - navRect.top + rect.height / 2
+    const count = 5 + Math.floor(Math.random() * 4)
+    const newBubbles: ClickBubble[] = []
+
+    for (let i = 0; i < count; i++) {
+      newBubbles.push({
+        id: ++bubbleIdCounter,
+        x: centerX + (Math.random() - 0.5) * 30,
+        y: centerY + (Math.random() - 0.5) * 10,
+        size: 3 + Math.random() * 5,
+        duration: 0.8 + Math.random() * 0.6,
+        delay: Math.random() * 0.15,
+      })
+    }
+
+    setClickBubbles(prev => [...prev, ...newBubbles])
+
+    // Clean up after animations finish
+    setTimeout(() => {
+      setClickBubbles(prev => prev.filter(b => !newBubbles.includes(b)))
+    }, 1600)
+  }, [])
+
+  const handleClick = useCallback((id: string, e: React.MouseEvent<HTMLButtonElement>) => {
+    spawnBubbles(e)
+    onNavigate(id)
+  }, [spawnBubbles, onNavigate])
+
   return (
     <nav aria-label="Main navigation" style={{
       width: 80,
@@ -73,7 +121,7 @@ export const NavSidebar: React.FC<NavSidebarProps> = ({ active, onNavigate }) =>
       {NAV_ITEMS.map((item) => (
         <Tooltip key={item.id} text={item.tooltip(name)} position="right" maxWidth={240}>
           <button
-            onClick={() => onNavigate(item.id)}
+            onClick={(e) => handleClick(item.id, e)}
             aria-label={`Navigate to ${item.label}`}
             aria-current={active === item.id ? 'page' : undefined}
             style={{
@@ -100,6 +148,27 @@ export const NavSidebar: React.FC<NavSidebarProps> = ({ active, onNavigate }) =>
             <span style={{ fontSize: 9, fontWeight: 500 }}>{item.label}</span>
           </button>
         </Tooltip>
+      ))}
+
+      {/* Click bubbles — tiny bubbles that float up when you click a nav button */}
+      {clickBubbles.map(b => (
+        <div
+          key={b.id}
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            left: b.x - b.size / 2,
+            top: b.y,
+            width: b.size,
+            height: b.size,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle at 30% 30%, rgba(0,200,212,0.6), rgba(0,200,212,0.15))',
+            border: '1px solid rgba(0,200,212,0.3)',
+            pointerEvents: 'none',
+            zIndex: 2,
+            animation: `navBubbleRise ${b.duration}s ease-out ${b.delay}s both`,
+          }}
+        />
       ))}
     </nav>
   )
