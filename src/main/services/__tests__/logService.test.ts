@@ -1,11 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { addLog, getLogs } from '../logService'
-
-// logService uses module-level state, so we test that behavior directly.
-// Note: logs accumulate across tests within a single run since the module
-// is only loaded once. Each describe starts from the current state.
+import { mkdtempSync, readFileSync, existsSync } from 'fs'
+import { join } from 'path'
+import { tmpdir } from 'os'
+import { addLog, getLogs, initLogStore, _resetForTesting } from '../logService'
 
 describe('logService', () => {
+  beforeEach(() => {
+    _resetForTesting()
+  })
+
   it('adds a log entry and returns it', () => {
     const entry = addLog('info', 'Hello from the deep')
     expect(entry.level).toBe('info')
@@ -20,14 +23,14 @@ describe('logService', () => {
   })
 
   it('getLogs returns all accumulated entries', () => {
-    const before = getLogs().length
     addLog('info', 'one')
     addLog('error', 'two')
     const after = getLogs()
-    expect(after.length).toBe(before + 2)
+    expect(after.length).toBe(2)
   })
 
   it('getLogs returns a copy (not the internal array)', () => {
+    addLog('info', 'test')
     const a = getLogs()
     const b = getLogs()
     expect(a).not.toBe(b)
@@ -50,12 +53,50 @@ describe('logService', () => {
   })
 
   it('caps at 1000 entries', () => {
-    // Add enough to exceed 1000 (there are already some from previous tests)
-    const current = getLogs().length
-    const needed = 1001 - current
-    for (let i = 0; i < needed + 10; i++) {
+    for (let i = 0; i < 1010; i++) {
       addLog('info', `entry-${i}`)
     }
     expect(getLogs().length).toBeLessThanOrEqual(1000)
+  })
+
+  describe('file persistence', () => {
+    it('persists logs to disk when initLogStore is called', () => {
+      const dir = mkdtempSync(join(tmpdir(), 'merman-log-'))
+      initLogStore(dir)
+      addLog('info', 'persisted entry')
+      const filePath = join(dir, 'logs.json')
+      expect(existsSync(filePath)).toBe(true)
+      const data = JSON.parse(readFileSync(filePath, 'utf8'))
+      expect(data.length).toBe(1)
+      expect(data[0].message).toBe('persisted entry')
+    })
+
+    it('restores logs from disk on init', () => {
+      const dir = mkdtempSync(join(tmpdir(), 'merman-log-'))
+      initLogStore(dir)
+      addLog('info', 'first')
+      addLog('warning', 'second')
+
+      // Simulate a restart
+      _resetForTesting()
+      initLogStore(dir)
+      const restored = getLogs()
+      expect(restored.length).toBe(2)
+      expect(restored[0].message).toBe('first')
+      expect(restored[1].message).toBe('second')
+    })
+
+    it('resumes id counter from persisted logs', () => {
+      const dir = mkdtempSync(join(tmpdir(), 'merman-log-'))
+      initLogStore(dir)
+      addLog('info', 'a')
+      addLog('info', 'b')
+      const lastId = parseInt(getLogs()[1].id, 10)
+
+      _resetForTesting()
+      initLogStore(dir)
+      const newEntry = addLog('info', 'c')
+      expect(parseInt(newEntry.id, 10)).toBeGreaterThan(lastId)
+    })
   })
 })

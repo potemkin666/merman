@@ -8,7 +8,7 @@ import type { RunResult } from './services/processRunner'
 import { spawnTerminal, writeTerminal, resizeTerminal, killTerminal } from './services/terminalService'
 import { getConfig, setConfig } from './services/configService'
 import { getApiKey, setApiKey, isSecureStorageAvailable } from './services/keychainService'
-import { getLogs, addLog } from './services/logService'
+import { getLogs, addLog, initLogStore } from './services/logService'
 import { translateError } from './services/translateError'
 
 let mainWindow: BrowserWindow | null = null
@@ -46,6 +46,7 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+  initLogStore(app.getPath('userData'))
   createWindow()
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
