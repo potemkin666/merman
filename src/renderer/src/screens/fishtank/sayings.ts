@@ -105,7 +105,8 @@ export function getStatusText(status: ServiceStatus): string {
 // --- Contextual click responses ---
 // The emissary reacts differently based on status and history
 
-export function getClickResponse(status: ServiceStatus, recentTasks: TaskResult[], clickCount: number): string {
+export function getClickResponse(status: ServiceStatus, recentTasks: TaskResult[], clickCount: number, emissaryName?: string): string {
+  const myName = emissaryName || 'Azurel'
   const lastTask = recentTasks[0]
   const errorCount = recentTasks.filter(t => t.status === 'error').length
   const totalDone = recentTasks.filter(t => t.status === 'done').length
@@ -176,7 +177,7 @@ export function getClickResponse(status: ServiceStatus, recentTasks: TaskResult[
 
   if (totalDone === 0 && recentTasks.length === 0) {
     const fresh = [
-      'Hello! I am your emissary — click "Dispatch" in the sidebar to send me on a task!',
+      `Hello! I am ${myName}, your emissary — click "Dispatch" in the sidebar to send me on a task!`,
       'New around here? Head to Setup first, then Dispatch to give me something to do.',
       'I am ready for my first mission! Just say the word.',
       '*waves enthusiastically* A new commander! I will not disappoint.',

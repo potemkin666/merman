@@ -93,10 +93,10 @@ export const Fishtank: React.FC<FishtankProps> = ({ status, recentTasks = [], on
 
   const handleEmissaryClick = useCallback(() => {
     setClickCount(c => c + 1)
-    const response = getClickResponse(status, recentTasks, clickCount)
+    const response = getClickResponse(status, recentTasks, clickCount, name)
     setSaying(response)
     setSayingKey(k => k + 1)
-  }, [status, recentTasks, clickCount])
+  }, [status, recentTasks, clickCount, name])
 
   // --- Drag-and-drop handlers ---
   const handleDragOver = useCallback((e: React.DragEvent) => {
