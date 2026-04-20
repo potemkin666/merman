@@ -4,6 +4,7 @@ import { useIpc } from '../hooks/useIpc'
 import { useConfig } from '../hooks/useConfig'
 import { IPC_CHANNELS } from '../../../shared/ipc'
 import { SeabedCanvas } from '../components/SeabedCanvas'
+import { HabitSuggestion } from '../components/HabitSuggestion'
 import {
   type Weather,
   type EmissaryAnimation,
@@ -242,6 +243,9 @@ export const Fishtank: React.FC<FishtankProps> = ({ status, recentTasks = [], on
           Drop files or folders here — {name} will catch them!
         </span>
       </p>
+
+      {/* Habit-based suggestion from the emissary */}
+      <HabitSuggestion emissaryName={name} />
 
       {/* Catch message toast */}
       {catchMessage && (

@@ -171,6 +171,8 @@ export function getClickResponse(status: ServiceStatus, recentTasks: TaskResult[
       'Another click? You must enjoy my company. The feeling is mutual.',
       'We have been through a lot together. I am proud of what we have accomplished.',
       `${totalDone} successful dives! I am getting quite fond of this arrangement.`,
+      'I have been watching the tides of your habits... I might have a suggestion for you soon.',
+      'You know, I am starting to recognize your patterns. I like that we have a rhythm.',
     ]
     return experienced[Math.floor(Math.random() * experienced.length)]
   }

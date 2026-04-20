@@ -56,3 +56,9 @@ export interface CommandResult {
   error?: string
   explanation?: ErrorExplanation
 }
+
+export interface HabitSuggestion {
+  text: string
+  mode: string
+  confidence: number
+}

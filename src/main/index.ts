@@ -10,6 +10,7 @@ import { getConfig, setConfig } from './services/configService'
 import { getApiKey, setApiKey, isSecureStorageAvailable } from './services/keychainService'
 import { getLogs, addLog, initLogStore } from './services/logService'
 import { translateError } from './services/translateError'
+import { initHabitStore, recordDispatch, getSuggestion } from './services/habitService'
 
 let mainWindow: BrowserWindow | null = null
 let serviceRun: RunResult | null = null
@@ -46,7 +47,9 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
-  initLogStore(app.getPath('userData'))
+  const userData = app.getPath('userData')
+  initLogStore(userData)
+  initHabitStore(userData)
   createWindow()
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
@@ -208,6 +211,7 @@ ipcMain.handle(IPC_CHANNELS.DISPATCH_TASK, async (_event, { prompt, mode, openCl
   }
   try {
     addLog('info', `Dispatching task: ${prompt.substring(0, 60)}...`)
+    recordDispatch(prompt, mode)
     mainWindow?.webContents.send(IPC_CHANNELS.ON_STATUS_CHANGE, 'running')
     const run = runCommand(
       'node',
@@ -292,4 +296,10 @@ ipcMain.handle(IPC_CHANNELS.TERMINAL_KILL, async () => {
   killTerminal()
   addLog('info', 'Terminal session ended')
   return { ok: true }
+})
+
+// --- Habit suggestion ---
+
+ipcMain.handle(IPC_CHANNELS.GET_HABIT_SUGGESTION, () => {
+  return getSuggestion()
 })

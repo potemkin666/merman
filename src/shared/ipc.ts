@@ -25,6 +25,7 @@ export const IPC_CHANNELS = {
   TERMINAL_KILL: 'terminal-kill',
   TERMINAL_OUTPUT: 'terminal-output',
   TERMINAL_EXIT: 'terminal-exit',
+  GET_HABIT_SUGGESTION: 'get-habit-suggestion',
 } as const
 
 export type IpcChannel = typeof IPC_CHANNELS[keyof typeof IPC_CHANNELS]
