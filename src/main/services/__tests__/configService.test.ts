@@ -7,22 +7,26 @@ vi.mock('electron', () => ({
   },
 }))
 
-// Mock fs module
-vi.mock('fs', () => ({
-  readFileSync: vi.fn(),
-  writeFileSync: vi.fn(),
-  existsSync: vi.fn(),
-  mkdirSync: vi.fn(),
+// Mock fs/promises module
+vi.mock('fs/promises', () => ({
+  readFile: vi.fn(),
+  writeFile: vi.fn().mockResolvedValue(undefined),
+  mkdir: vi.fn().mockResolvedValue(undefined),
 }))
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
+// Mock fs module (for existsSync)
+vi.mock('fs', () => ({
+  existsSync: vi.fn(),
+}))
+
+import { readFile, writeFile } from 'fs/promises'
+import { existsSync } from 'fs'
 import { getConfig, setConfig } from '../configService'
 import { defaultConfig } from '../../../shared/defaults'
 
-const mockReadFileSync = vi.mocked(readFileSync)
-const mockWriteFileSync = vi.mocked(writeFileSync)
+const mockReadFile = vi.mocked(readFile)
+const mockWriteFile = vi.mocked(writeFile)
 const mockExistsSync = vi.mocked(existsSync)
-const mockMkdirSync = vi.mocked(mkdirSync)
 
 describe('configService', () => {
   beforeEach(() => {
@@ -30,24 +34,24 @@ describe('configService', () => {
   })
 
   describe('getConfig', () => {
-    it('returns defaults and writes file when config does not exist', () => {
+    it('returns defaults and writes file when config does not exist', async () => {
       mockExistsSync.mockReturnValue(false)
 
-      const result = getConfig()
+      const result = await getConfig()
 
       expect(result).toEqual(defaultConfig)
-      expect(mockWriteFileSync).toHaveBeenCalledTimes(1)
+      expect(mockWriteFile).toHaveBeenCalledTimes(1)
       // The written JSON should be the defaults
-      const writtenJson = JSON.parse(mockWriteFileSync.mock.calls[0][1] as string)
+      const writtenJson = JSON.parse(mockWriteFile.mock.calls[0][1] as string)
       expect(writtenJson).toEqual(defaultConfig)
     })
 
-    it('merges saved config with defaults when config file exists', () => {
+    it('merges saved config with defaults when config file exists', async () => {
       mockExistsSync.mockReturnValue(true)
       const savedConfig = { openClawPath: '/my/path', model: 'gpt-4-turbo' }
-      mockReadFileSync.mockReturnValue(JSON.stringify(savedConfig))
+      mockReadFile.mockResolvedValue(JSON.stringify(savedConfig))
 
-      const result = getConfig()
+      const result = await getConfig()
 
       expect(result.openClawPath).toBe('/my/path')
       expect(result.model).toBe('gpt-4-turbo')
@@ -57,63 +61,63 @@ describe('configService', () => {
       expect(result.presets).toEqual(defaultConfig.presets)
     })
 
-    it('returns defaults when config file has invalid JSON', () => {
+    it('returns defaults when config file has invalid JSON', async () => {
       mockExistsSync.mockReturnValue(true)
-      mockReadFileSync.mockReturnValue('not valid json {{{')
+      mockReadFile.mockResolvedValue('not valid json {{{')
 
-      const result = getConfig()
+      const result = await getConfig()
 
       expect(result).toEqual(defaultConfig)
     })
 
-    it('ensures userData directory exists via mkdirSync', () => {
+    it('ensures userData directory exists via mkdir', async () => {
+      const { mkdir } = await import('fs/promises')
       mockExistsSync.mockReturnValue(false)
 
-      getConfig()
+      await getConfig()
 
-      expect(mockMkdirSync).toHaveBeenCalledWith('/mock/userData', { recursive: true })
+      expect(mkdir).toHaveBeenCalledWith('/mock/userData', { recursive: true })
     })
   })
 
   describe('setConfig', () => {
-    it('merges updates with current config and writes to disk', () => {
-      // First call to getConfig inside setConfig
+    it('merges updates with current config and writes to disk', async () => {
       mockExistsSync.mockReturnValue(true)
-      mockReadFileSync.mockReturnValue(JSON.stringify(defaultConfig))
+      mockReadFile.mockResolvedValue(JSON.stringify(defaultConfig))
 
-      const result = setConfig({ openClawPath: '/new/path' })
+      const result = await setConfig({ openClawPath: '/new/path' })
 
       expect(result.openClawPath).toBe('/new/path')
       // Other fields preserved
       expect(result.model).toBe(defaultConfig.model)
-      expect(mockWriteFileSync).toHaveBeenCalledTimes(1)
+      expect(mockWriteFile).toHaveBeenCalledTimes(1)
     })
 
-    it('strips apiKey from updates to avoid storing it in plain text', () => {
+    it('strips apiKey from updates to avoid storing it in plain text', async () => {
       mockExistsSync.mockReturnValue(true)
-      mockReadFileSync.mockReturnValue(JSON.stringify(defaultConfig))
+      mockReadFile.mockResolvedValue(JSON.stringify(defaultConfig))
 
-      const result = setConfig({ apiKey: 'sk-secret-key', model: 'gpt-4o' })
+      const result = await setConfig({ apiKey: 'sk-secret-key', model: 'gpt-4o' })
 
       // The apiKey should be empty in the returned config
       expect(result.apiKey).toBe('')
       // The model update should be applied
       expect(result.model).toBe('gpt-4o')
       // Written JSON should not contain the api key
-      const writtenJson = JSON.parse(mockWriteFileSync.mock.calls[0][1] as string)
+      const writtenJson = JSON.parse(mockWriteFile.mock.calls[0][1] as string)
       expect(writtenJson.apiKey).toBe('')
     })
 
-    it('preserves presets when updating other fields', () => {
+    it('preserves presets when updating other fields', async () => {
       const customPresets = [
         { id: '99', name: 'Test', mode: 'test', description: 'Test preset' },
       ]
       mockExistsSync.mockReturnValue(true)
-      mockReadFileSync.mockReturnValue(
+      mockReadFile.mockResolvedValue(
         JSON.stringify({ ...defaultConfig, presets: customPresets })
       )
 
-      const result = setConfig({ emissaryName: 'Coral' })
+      const result = await setConfig({ emissaryName: 'Coral' })
 
       expect(result.emissaryName).toBe('Coral')
       expect(result.presets).toEqual(customPresets)
