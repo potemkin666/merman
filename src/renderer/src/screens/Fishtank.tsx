@@ -171,6 +171,15 @@ function getSayings(status: ServiceStatus): string[] {
   }
 }
 
+function getStatusText(status: ServiceStatus): string {
+  switch (status) {
+    case 'running': return 'working in the depths'
+    case 'error': return 'troubled waters'
+    case 'stopped': return 'resting at shore'
+    default: return 'awaiting command'
+  }
+}
+
 export const Fishtank: React.FC<FishtankProps> = ({ status }) => {
   const [animation, setAnimation] = useState<EmissaryAnimation>('floating')
   const [saying, setSaying] = useState('')
@@ -250,7 +259,7 @@ export const Fishtank: React.FC<FishtankProps> = ({ status }) => {
       {/* The tank */}
       <div
         role="img"
-        aria-label={`Fishtank: the emissary is ${ANIMATION_LABELS[animation].toLowerCase()}. Status: ${status === 'running' ? 'working in the depths' : status === 'error' ? 'troubled waters' : status === 'stopped' ? 'resting at shore' : 'awaiting command'}.`}
+        aria-label={`Fishtank: the emissary is ${ANIMATION_LABELS[animation].toLowerCase()}. Status: ${getStatusText(status)}.`}
         style={{
         flex: 1,
         minHeight: 420,

@@ -108,9 +108,9 @@ export const WelcomeOverlay: React.FC<WelcomeOverlayProps> = ({ onDismiss }) => 
         </p>
 
         {/* Progress dots */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 24 }} role="tablist" aria-label="Tour progress">
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 24 }} aria-hidden="true">
           {steps.map((_, i) => (
-            <div key={i} role="tab" aria-selected={i === step} aria-label={`Step ${i + 1} of ${steps.length}`} style={{
+            <div key={i} aria-label={`Step ${i + 1} of ${steps.length}`} style={{
               width: i === step ? 24 : 8,
               height: 8,
               borderRadius: 4,

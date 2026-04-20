@@ -73,7 +73,12 @@ export const TideLog: React.FC<TideLogProps> = ({ logs }) => {
             aria-checked={rawMode}
             aria-label="Toggle raw log mode"
             tabIndex={0}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setRawMode((r) => !r) } }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                setRawMode((r) => !r)
+              }
+            }}
             style={{
               width: 36,
               height: 20,

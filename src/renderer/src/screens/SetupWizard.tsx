@@ -117,9 +117,9 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
         </div>
         <div style={{ height: 4, background: 'var(--color-surface)', borderRadius: 2 }}
           role="progressbar"
-          aria-valuenow={step + 1}
-          aria-valuemin={1}
-          aria-valuemax={STEPS.length}
+          aria-valuenow={step}
+          aria-valuemin={0}
+          aria-valuemax={STEPS.length - 1}
           aria-label={`Setup progress: step ${step + 1} of ${STEPS.length}`}
         >
           <div style={{
