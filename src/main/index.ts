@@ -365,6 +365,17 @@ ipcMain.handle(IPC_CHANNELS.GET_HABIT_SUGGESTION, () => {
   return getSuggestion()
 })
 
+// --- Open external URL in default browser ---
+
+ipcMain.handle(IPC_CHANNELS.OPEN_EXTERNAL, (_event, url: string) => {
+  // Only allow http(s) URLs to prevent shell injection
+  if (typeof url === 'string' && /^https?:\/\//.test(url)) {
+    shell.openExternal(url)
+    return { ok: true }
+  }
+  return { ok: false, error: 'Invalid URL.' }
+})
+
 // --- Service heartbeat ---
 
 /**

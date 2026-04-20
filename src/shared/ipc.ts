@@ -31,6 +31,7 @@ export const IPC_CHANNELS = {
   ADD_TASK: 'add-task',
   GET_HABIT_SUGGESTION: 'get-habit-suggestion',
   SERVICE_HEARTBEAT: 'service-heartbeat',
+  OPEN_EXTERNAL: 'open-external',
 } as const
 
 export type IpcChannel = typeof IPC_CHANNELS[keyof typeof IPC_CHANNELS]
