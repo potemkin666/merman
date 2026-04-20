@@ -111,14 +111,14 @@ export const DeepDive: React.FC<DeepDiveProps> = ({ config }) => {
   useIpcListener(IPC_CHANNELS.TERMINAL_OUTPUT, (...args: unknown[]) => {
     const data = args[0] as string
     termRef.current?.write(data)
-  }, [])
+  })
 
   // Terminal exit listener
   useIpcListener(IPC_CHANNELS.TERMINAL_EXIT, () => {
     setIsRunning(false)
     setNarration(`The deep dive has ended. ${name} has returned to shore.`)
     termRef.current?.write('\r\n\x1b[36m[Session ended]\x1b[0m\r\n')
-  }, [])
+  })
 
   // Initialize xterm
   useEffect(() => {
@@ -207,7 +207,7 @@ export const DeepDive: React.FC<DeepDiveProps> = ({ config }) => {
   }, [invoke])
 
   const handleDiveIn = useCallback(async () => {
-    const cwd = config.openClawPath || process.cwd?.() || ''
+    const cwd = config.openClawPath || ''
     const result = await invoke<CommandResult>(IPC_CHANNELS.TERMINAL_SPAWN, cwd)
     if (result.ok) {
       setIsRunning(true)
@@ -233,49 +233,33 @@ export const DeepDive: React.FC<DeepDiveProps> = ({ config }) => {
   }, [invoke])
 
   return (
-    <div style={{ padding: 32, maxWidth: 1100, margin: '0 auto', height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--color-primary)', marginBottom: 8 }}>
+    <div className="deep-dive">
+      <h1 className="screen-title">
         Deep Dive
       </h1>
-      <p style={{ color: 'var(--color-text-muted)', marginBottom: 16, fontSize: 14 }}>
+      <p className="screen-subtitle" style={{ marginBottom: 16 }}>
         🤿 A real shell session inside your OpenClaw directory — narrated by {name}.
       </p>
 
       {/* Emissary narration bar */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        padding: '10px 16px',
-        background: 'var(--color-panel)',
-        border: '1px solid var(--color-border)',
-        borderRadius: 'var(--radius-md)',
-        marginBottom: 12,
-      }}>
-        <span style={{ fontSize: 22, flexShrink: 0 }}>🧜‍♂️</span>
-        <p style={{
-          flex: 1,
-          fontSize: 13,
-          color: 'var(--color-text)',
-          lineHeight: 1.5,
+      <div className="deep-dive__narration-bar">
+        <span className="deep-dive__narration-icon">🧜‍♂️</span>
+        <p className="deep-dive__narration-text" style={{
           fontStyle: narration.startsWith('*') ? 'italic' : 'normal',
         }}>
           {narration}
         </p>
-        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+        <div className="deep-dive__narration-actions">
           {!isRunning ? (
             <Tooltip text={!config.openClawPath ? 'Set your OpenClaw path in Deep Config or Setup first.' : 'Open a real terminal session inside your OpenClaw directory.'}>
               <button
                 onClick={handleDiveIn}
                 disabled={!config.openClawPath}
                 aria-label="Start terminal session"
+                className="deep-dive__btn"
                 style={{
-                  padding: '7px 18px',
                   background: !config.openClawPath ? 'rgba(0,200,212,0.2)' : 'var(--color-primary)',
                   color: !config.openClawPath ? 'var(--color-text-muted)' : '#0a0f1e',
-                  borderRadius: 'var(--radius-md)',
-                  fontWeight: 600,
-                  fontSize: 13,
                   cursor: !config.openClawPath ? 'not-allowed' : 'pointer',
                   boxShadow: !config.openClawPath ? 'none' : 'var(--glow-primary)',
                 }}
@@ -288,15 +272,7 @@ export const DeepDive: React.FC<DeepDiveProps> = ({ config }) => {
               <button
                 onClick={handleSurface}
                 aria-label="End terminal session"
-                style={{
-                  padding: '7px 18px',
-                  background: 'var(--color-warning)',
-                  color: '#0a0f1e',
-                  borderRadius: 'var(--radius-md)',
-                  fontWeight: 600,
-                  fontSize: 13,
-                  cursor: 'pointer',
-                }}
+                className="deep-dive__btn deep-dive__btn--surface"
               >
                 🏊 Surface
               </button>
@@ -306,34 +282,15 @@ export const DeepDive: React.FC<DeepDiveProps> = ({ config }) => {
       </div>
 
       {/* Terminal container */}
-      <div style={{
-        flex: 1,
-        minHeight: 300,
-        background: '#060d1a',
-        border: '2px solid rgba(0, 200, 212, 0.2)',
-        borderRadius: 'var(--radius-lg)',
-        overflow: 'hidden',
-        position: 'relative',
-        padding: 8,
-      }}>
+      <div className="deep-dive__terminal">
         <div
           ref={terminalRef}
-          style={{ width: '100%', height: '100%' }}
+          className="deep-dive__terminal-inner"
         />
         {!isRunning && (
-          <div style={{
-            position: 'absolute',
-            inset: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexDirection: 'column',
-            gap: 12,
-            background: 'rgba(6,13,26,0.8)',
-            zIndex: 1,
-          }}>
-            <span style={{ fontSize: 48 }}>🤿</span>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: 14 }}>
+          <div className="deep-dive__terminal-overlay">
+            <span className="deep-dive__terminal-overlay-icon">🤿</span>
+            <p className="deep-dive__terminal-overlay-text">
               Click &ldquo;Dive In&rdquo; above to start a terminal session.
             </p>
           </div>

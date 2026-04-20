@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { NavSidebar } from './components/NavSidebar'
 import { WelcomeOverlay } from './components/WelcomeOverlay'
 import { ElectronUnavailable } from './components/ElectronUnavailable'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { Harbor } from './screens/Harbor'
 import { SetupWizard } from './screens/SetupWizard'
 import { Dispatch } from './screens/Dispatch'
@@ -13,6 +14,7 @@ import { ConfigProvider, useConfig } from './hooks/useConfig'
 import { LogsProvider, useLogs } from './hooks/useLogs'
 import { ServiceProvider, useService } from './hooks/useService'
 import { TasksProvider, useTasks } from './hooks/useTasks'
+import { ThemeProvider } from './hooks/useTheme'
 import { isElectronAvailable, useIpc } from './hooks/useIpc'
 import { IPC_CHANNELS } from '../../shared/ipc'
 
@@ -24,7 +26,6 @@ function AppContent() {
   const { recentTasks, addTask } = useTasks()
   const { invoke } = useIpc()
   const [showWelcome, setShowWelcome] = useState(false)
-  const [attachedFiles, setAttachedFiles] = useState<string[]>([])
 
   useEffect(() => {
     if (!loading) {
@@ -47,27 +48,15 @@ function AppContent() {
     updateConfig({ workspacePath: path })
   }, [updateConfig])
 
-  const handleFishtankFilesAttached = useCallback((paths: string[]) => {
-    setAttachedFiles(prev => [...prev, ...paths])
-  }, [])
-
   if (loading) {
     return (
       <div
         role="status"
         aria-label="Loading OpenClaw Harbour"
-        style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh',
-        flexDirection: 'column',
-        gap: 16,
-        background: 'var(--color-bg)',
-      }}>
-        <div style={{ fontSize: 56, animation: 'emissaryFloat 3s ease-in-out infinite' }} aria-hidden="true">🔱</div>
-        <p style={{ color: 'var(--color-primary)', fontSize: 18, fontWeight: 600 }}>OpenClaw Harbour</p>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: 14 }}>Your emissary awaits.</p>
+        className="loading-screen">
+        <div className="loading-screen__icon" aria-hidden="true">🔱</div>
+        <p className="loading-screen__title">OpenClaw Harbour</p>
+        <p className="loading-screen__subtitle">Your emissary awaits.</p>
       </div>
     )
   }
@@ -77,7 +66,7 @@ function AppContent() {
       case 'harbor': return <Harbor config={config} status={status} recentTasks={recentTasks} onStatusChange={setStatus} onNavigate={setPage} />
       case 'setup': return <SetupWizard config={config} onSave={updateConfig} />
       case 'dispatch': return <Dispatch config={config} onTaskAdded={addTask} />
-      case 'fishtank': return <Fishtank status={status} recentTasks={recentTasks} onWorkspacePathSet={handleFishtankWorkspaceDrop} onFilesAttached={handleFishtankFilesAttached} />
+      case 'fishtank': return <Fishtank status={status} recentTasks={recentTasks} onWorkspacePathSet={handleFishtankWorkspaceDrop} />
       case 'deepdive': return <DeepDive config={config} />
       case 'tidelog': return <TideLog logs={logs} />
       case 'deepconfig': return <DeepConfig config={config} onSave={updateConfig} />
@@ -86,15 +75,13 @@ function AppContent() {
   }
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+    <div className="app-layout">
       {showWelcome && <WelcomeOverlay onDismiss={dismissWelcome} />}
       <NavSidebar active={page} onNavigate={setPage} />
-      <main style={{
-        flex: 1,
-        overflowY: 'auto',
-        background: 'var(--color-bg)',
-      }}>
-        {renderScreen()}
+      <main className="app-main">
+        <ErrorBoundary key={page}>
+          {renderScreen()}
+        </ErrorBoundary>
       </main>
     </div>
   )
@@ -109,14 +96,16 @@ export default function App() {
   }
 
   return (
-    <ConfigProvider>
-      <LogsProvider>
-        <ServiceProvider>
-          <TasksProvider>
-            <AppContent />
-          </TasksProvider>
-        </ServiceProvider>
-      </LogsProvider>
-    </ConfigProvider>
+    <ThemeProvider>
+      <ConfigProvider>
+        <LogsProvider>
+          <ServiceProvider>
+            <TasksProvider>
+              <AppContent />
+            </TasksProvider>
+          </ServiceProvider>
+        </LogsProvider>
+      </ConfigProvider>
+    </ThemeProvider>
   )
 }

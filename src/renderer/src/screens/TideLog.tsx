@@ -3,6 +3,8 @@ import { LogPanel } from '../components/LogPanel'
 import { Tooltip } from '../components/Tooltip'
 import { HelpHint } from '../components/Tooltip'
 import { useConfig } from '../hooks/useConfig'
+import { useIpc } from '../hooks/useIpc'
+import { IPC_CHANNELS } from '../../../shared/ipc'
 import type { LogEntry } from '../../../shared/types'
 
 interface TideLogProps {
@@ -13,6 +15,7 @@ type Filter = 'all' | LogEntry['level']
 
 export const TideLog: React.FC<TideLogProps> = ({ logs }) => {
   const { config } = useConfig()
+  const { invoke } = useIpc()
   const name = config.emissaryName || 'Azurel'
   const [filter, setFilter] = useState<Filter>('all')
   const [rawMode, setRawMode] = useState(false)
@@ -41,7 +44,7 @@ export const TideLog: React.FC<TideLogProps> = ({ logs }) => {
         🌊 The currents of activity, recorded. Newest entries are at the bottom.
       </p>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+      <div className="tide-log__toolbar">
         {(['all', 'info', 'warning', 'error'] as Filter[]).map((f) => (
           <Tooltip key={f} text={filterTooltips[f]}>
             <button
@@ -54,9 +57,9 @@ export const TideLog: React.FC<TideLogProps> = ({ logs }) => {
             </button>
           </Tooltip>
         ))}
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div className="tide-log__toolbar-right">
           <Tooltip text="Toggle between 'simple' mode (easy to read) and 'raw' mode (shows the exact text from the system — more technical).">
-            <span style={{ fontSize: 12, color: 'var(--color-text-muted)', cursor: 'help' }}>Raw</span>
+            <span className="tide-log__raw-label">Raw</span>
           </Tooltip>
           <div
             onClick={() => setRawMode((r) => !r)}
@@ -70,32 +73,30 @@ export const TideLog: React.FC<TideLogProps> = ({ logs }) => {
                 setRawMode((r) => !r)
               }
             }}
+            className="toggle-switch"
             style={{
-              width: 36,
-              height: 20,
-              borderRadius: 10,
               background: rawMode ? 'var(--color-primary)' : 'var(--color-surface)',
-              border: '1px solid var(--color-border)',
-              cursor: 'pointer',
-              position: 'relative',
-              transition: 'background 0.2s',
             }}
           >
-            <div style={{
-              width: 14,
-              height: 14,
-              borderRadius: '50%',
+            <div className="toggle-switch__knob" style={{
               background: rawMode ? '#0a0f1e' : 'var(--color-text-muted)',
-              position: 'absolute',
-              top: 2,
               left: rawMode ? 18 : 2,
-              transition: 'left 0.2s',
             }} />
           </div>
+          <Tooltip text="Export all logs to a text file on your computer. Useful for sharing with someone who can help debug issues.">
+            <button
+              onClick={() => invoke(IPC_CHANNELS.EXPORT_LOGS)}
+              aria-label="Export logs to file"
+              className="filter-btn filter-btn--inactive"
+              style={{ marginLeft: 8 }}
+            >
+              📤 Export
+            </button>
+          </Tooltip>
         </div>
       </div>
 
-      <div style={{ flex: 1, overflow: 'hidden' }}>
+      <div className="tide-log__content">
         <LogPanel logs={logs} filter={filter} rawMode={rawMode} maxHeight="calc(100vh - 280px)" />
       </div>
     </div>

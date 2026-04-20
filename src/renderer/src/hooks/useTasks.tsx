@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
+import { useIpc } from './useIpc'
+import { IPC_CHANNELS } from '../../../shared/ipc'
 import type { TaskResult } from '../../../shared/types'
 
 interface TasksContextValue {
@@ -9,26 +11,21 @@ interface TasksContextValue {
 const TasksContext = createContext<TasksContextValue | null>(null)
 
 export const TasksProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { invoke } = useIpc()
   const [recentTasks, setRecentTasks] = useState<TaskResult[]>([])
 
   useEffect(() => {
-    const stored = localStorage.getItem('recentTasks')
-    if (stored) {
-      try {
-        setRecentTasks(JSON.parse(stored))
-      } catch {
-        // ignore corrupt data
-      }
-    }
-  }, [])
+    invoke<TaskResult[]>(IPC_CHANNELS.GET_TASKS)
+      .then(setRecentTasks)
+      .catch((e) => console.error('Tasks load error:', e))
+  }, [invoke])
 
   const addTask = useCallback((task: TaskResult) => {
-    setRecentTasks((prev) => {
-      const updated = [task, ...prev].slice(0, 20)
-      localStorage.setItem('recentTasks', JSON.stringify(updated))
-      return updated
-    })
-  }, [])
+    setRecentTasks((prev) => [task, ...prev].slice(0, 20))
+    invoke(IPC_CHANNELS.ADD_TASK, task).catch((e) =>
+      console.error('Task persist error:', e)
+    )
+  }, [invoke])
 
   return (
     <TasksContext.Provider value={{ recentTasks, addTask }}>

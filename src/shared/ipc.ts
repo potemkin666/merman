@@ -16,16 +16,21 @@ export const IPC_CHANNELS = {
   DISPATCH_TASK: 'dispatch-task',
   CANCEL_TASK: 'cancel-task',
   GET_LOGS: 'get-logs',
+  EXPORT_LOGS: 'export-logs',
   ON_LOG: 'on-log',
   ON_STATUS_CHANGE: 'on-status-change',
   RESOLVE_DROPPED_PATHS: 'resolve-dropped-paths',
+  VALIDATE_PATH: 'validate-path',
   TERMINAL_SPAWN: 'terminal-spawn',
   TERMINAL_INPUT: 'terminal-input',
   TERMINAL_RESIZE: 'terminal-resize',
   TERMINAL_KILL: 'terminal-kill',
   TERMINAL_OUTPUT: 'terminal-output',
   TERMINAL_EXIT: 'terminal-exit',
+  GET_TASKS: 'get-tasks',
+  ADD_TASK: 'add-task',
   GET_HABIT_SUGGESTION: 'get-habit-suggestion',
+  SERVICE_HEARTBEAT: 'service-heartbeat',
 } as const
 
 export type IpcChannel = typeof IPC_CHANNELS[keyof typeof IPC_CHANNELS]

@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useRef } from 'react'
 import type { IpcChannel } from '../../../shared/ipc'
 
 declare global {
@@ -40,15 +40,27 @@ export function useIpc() {
   return { invoke, on, available: isElectronAvailable() }
 }
 
+/**
+ * Subscribe to an IPC channel. The callback is stored in a ref so it
+ * always sees the latest props/state without needing a manual deps array
+ * — this eliminates the stale-closure risk that existed previously.
+ */
 export function useIpcListener(
   channel: IpcChannel,
-  callback: (...args: unknown[]) => void,
-  deps: unknown[] = []
+  callback: (...args: unknown[]) => void
 ) {
   const { on } = useIpc()
+  const callbackRef = useRef(callback)
+
+  // Keep the ref up-to-date on every render
   useEffect(() => {
-    const cleanup = on(channel, callback)
+    callbackRef.current = callback
+  })
+
+  useEffect(() => {
+    const cleanup = on(channel, (...args: unknown[]) => {
+      callbackRef.current(...args)
+    })
     return cleanup
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [channel, ...deps])
+  }, [channel, on])
 }

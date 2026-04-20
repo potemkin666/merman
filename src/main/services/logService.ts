@@ -3,10 +3,12 @@ import { join, dirname } from 'path'
 import type { LogEntry } from '../../shared/types'
 
 const MAX_ENTRIES = 1000
+const PERSIST_DEBOUNCE_MS = 2000
 
 let logs: LogEntry[] = []
 let idCounter = 0
 let logFilePath: string | null = null
+let persistTimer: ReturnType<typeof setTimeout> | null = null
 
 /**
  * Initialise the log store with a file path for persistence.
@@ -34,7 +36,7 @@ export function initLogStore(userDataDir: string): void {
   }
 }
 
-function persist(): void {
+function persistNow(): void {
   if (!logFilePath) return
   try {
     mkdirSync(dirname(logFilePath), { recursive: true })
@@ -42,6 +44,18 @@ function persist(): void {
   } catch {
     // Best-effort — don't crash the app if the disk write fails
   }
+}
+
+/**
+ * Debounced persist — batches rapid log bursts into a single write.
+ * During busy sessions this avoids hundreds of synchronous writes.
+ */
+function persist(): void {
+  if (persistTimer) clearTimeout(persistTimer)
+  persistTimer = setTimeout(() => {
+    persistNow()
+    persistTimer = null
+  }, PERSIST_DEBOUNCE_MS)
 }
 
 export function addLog(level: LogEntry['level'], message: string): LogEntry {
@@ -63,10 +77,36 @@ export function getLogs(): LogEntry[] {
 }
 
 /**
+ * Export logs as a formatted string suitable for saving to a file.
+ * Each line is: [TIMESTAMP] LEVEL  message
+ */
+export function exportLogs(): string {
+  return logs.map((l) =>
+    `[${l.timestamp}] ${l.level.toUpperCase().padEnd(7)} ${l.message}`
+  ).join('\n')
+}
+
+/**
+ * Flush any pending debounced writes immediately.
+ * Call before app quit to ensure logs are not lost.
+ */
+export function flushLogs(): void {
+  if (persistTimer) {
+    clearTimeout(persistTimer)
+    persistTimer = null
+  }
+  persistNow()
+}
+
+/**
  * Reset the log store — intended for tests only.
  */
 export function _resetForTesting(): void {
   logs = []
   idCounter = 0
   logFilePath = null
+  if (persistTimer) {
+    clearTimeout(persistTimer)
+    persistTimer = null
+  }
 }

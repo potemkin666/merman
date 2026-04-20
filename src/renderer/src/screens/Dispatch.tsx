@@ -28,7 +28,10 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
   const [elapsed, setElapsed] = useState(0)
   const [cancelling, setCancelling] = useState(false)
   const [showAdvancedConfirm, setShowAdvancedConfirm] = useState(false)
+  const [cooldown, setCooldown] = useState(0)
   const elapsedRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const DISPATCH_COOLDOWN_S = 3
 
   // Elapsed time counter during dispatch
   useEffect(() => {
@@ -45,6 +48,13 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
       if (elapsedRef.current) clearInterval(elapsedRef.current)
     }
   }, [dispatching])
+
+  // Cooldown counter — ticks down after each dispatch to prevent rapid re-dispatching
+  useEffect(() => {
+    if (cooldown <= 0) return
+    const id = setTimeout(() => setCooldown((s) => Math.max(0, s - 1)), 1000)
+    return () => clearTimeout(id)
+  }, [cooldown])
 
   const allModes = [
     ...AGENT_MODES,
@@ -75,6 +85,7 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
 
   const handleDispatch = async () => {
     if (!prompt.trim()) return
+    if (cooldown > 0) return
 
     // If the selected mode is "advanced" (Advanced Custom preset), require confirmation first
     const isAdvancedMode = mode === 'advanced'
@@ -110,6 +121,7 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
     onTaskAdded(finalTask)
     setDispatching(false)
     setResult(res)
+    setCooldown(DISPATCH_COOLDOWN_S)
   }
 
   return (
@@ -157,8 +169,8 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
           className="input input--textarea"
         />
 
-        <div style={{ display: 'flex', gap: 12, marginTop: 16, alignItems: 'center' }}>
-          <div style={{ flex: 1 }}>
+        <div className="dispatch__controls">
+          <div className="dispatch__mode-wrapper">
             <label className="label label--sm" style={{ marginBottom: 6 }}>
               Mode
               <HelpHint text="Modes change how the agent approaches your task. 'Default' works for most things. Pick 'Code' for programming tasks, 'Research' for investigation, etc. Not sure? Just leave it on Default." />
@@ -176,25 +188,20 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
             </select>
           </div>
 
-          <Tooltip text={dispatching ? `${name} is already working on something. Please wait.` : !prompt.trim() ? 'Type an instruction first, then click here to send it.' : `Click to send this task to ${name}. He will dive into the depths and return with results.`}>
+          <Tooltip text={dispatching ? `${name} is already working on something. Please wait.` : cooldown > 0 ? `Cooling down — ${name} needs a moment to recover. Ready in ${cooldown}s.` : !prompt.trim() ? 'Type an instruction first, then click here to send it.' : `Click to send this task to ${name}. He will dive into the depths and return with results.`}>
             <button
               onClick={handleDispatch}
-              disabled={dispatching || !prompt.trim()}
-              aria-label={dispatching ? 'Dispatching task' : `Dispatch task to ${name}`}
+              disabled={dispatching || cooldown > 0 || !prompt.trim()}
+              aria-label={dispatching ? 'Dispatching task' : cooldown > 0 ? `Cooldown — ready in ${cooldown}s` : `Dispatch task to ${name}`}
+              className="dispatch__btn"
               style={{
-                marginTop: 20,
-                padding: '10px 28px',
-                background: dispatching || !prompt.trim() ? 'rgba(0,200,212,0.2)' : 'var(--color-primary)',
-                color: dispatching || !prompt.trim() ? 'var(--color-text-muted)' : '#0a0f1e',
-                borderRadius: 'var(--radius-md)',
-                fontWeight: 700,
-                fontSize: 14,
-                cursor: dispatching || !prompt.trim() ? 'not-allowed' : 'pointer',
-                boxShadow: dispatching || !prompt.trim() ? 'none' : 'var(--glow-primary)',
-                whiteSpace: 'nowrap',
+                background: dispatching || cooldown > 0 || !prompt.trim() ? 'rgba(0,200,212,0.2)' : 'var(--color-primary)',
+                color: dispatching || cooldown > 0 || !prompt.trim() ? 'var(--color-text-muted)' : '#0a0f1e',
+                cursor: dispatching || cooldown > 0 || !prompt.trim() ? 'not-allowed' : 'pointer',
+                boxShadow: dispatching || cooldown > 0 || !prompt.trim() ? 'none' : 'var(--glow-primary)',
               }}
             >
-              {dispatching ? `⏳ Dispatching... (${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')})` : `🔱 Dispatch ${name}`}
+              {dispatching ? `⏳ Dispatching... (${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')})` : cooldown > 0 ? `⏳ Ready in ${cooldown}s` : `🔱 Dispatch ${name}`}
             </button>
           </Tooltip>
           {dispatching && (
@@ -203,17 +210,9 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
                 onClick={handleCancel}
                 disabled={cancelling}
                 aria-label="Cancel the running task"
+                className="dispatch__cancel-btn"
                 style={{
-                  marginTop: 20,
-                  marginLeft: 8,
-                  padding: '10px 20px',
-                  background: 'var(--color-error)',
-                  color: '#fff',
-                  borderRadius: 'var(--radius-md)',
-                  fontWeight: 600,
-                  fontSize: 14,
                   cursor: cancelling ? 'wait' : 'pointer',
-                  whiteSpace: 'nowrap',
                   opacity: cancelling ? 0.6 : 1,
                 }}
               >
@@ -226,13 +225,8 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
 
       {/* Result or error */}
       {result && result.ok && (
-        <div style={{
-          background: 'var(--color-panel)',
-          border: '1px solid var(--color-border)',
-          borderRadius: 'var(--radius-lg)',
-          padding: 20,
-        }}>
-          <h3 style={{ fontSize: 13, fontWeight: 600, marginBottom: 12, color: 'var(--color-success)' }}>
+        <div className="dispatch__result">
+          <h3 className="dispatch__result-title" style={{ color: 'var(--color-success)' }}>
             ✅ Returned to shore
           </h3>
           <pre className="output-pre">
@@ -243,11 +237,11 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
 
       {result && !result.ok && (
         <div className="card" style={{ borderColor: 'rgba(232,93,93,0.3)', padding: 20 }}>
-          <h3 style={{ fontSize: 13, fontWeight: 600, marginBottom: 12, color: 'var(--color-error)' }}>
+          <h3 className="dispatch__result-title" style={{ color: 'var(--color-error)' }}>
             ❌ {name} returned empty-handed
           </h3>
           {result.explanation ? (
-            <div style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 12 }}>
+            <div className="dispatch__error-detail">
               <p style={{ color: 'var(--color-text)', marginBottom: 4 }}>
                 <strong>What happened:</strong> {result.explanation.what}
               </p>
@@ -264,15 +258,15 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
             </pre>
           )}
           {result.explanation?.retryable !== false && (
-            <Tooltip text="Try the same task again. Sometimes things work on the second try if it was a temporary issue.">
+            <Tooltip text={cooldown > 0 ? `Cooling down — ready in ${cooldown}s.` : "Try the same task again. Sometimes things work on the second try if it was a temporary issue."}>
               <button
                 onClick={handleDispatch}
-                disabled={dispatching}
-                aria-label="Retry the failed task"
+                disabled={dispatching || cooldown > 0}
+                aria-label={cooldown > 0 ? `Retry available in ${cooldown}s` : "Retry the failed task"}
                 className="btn btn--warning"
                 style={{ marginTop: 12, fontSize: 13 }}
               >
-                🔄 Retry
+                {cooldown > 0 ? `⏳ Retry in ${cooldown}s` : '🔄 Retry'}
               </button>
             </Tooltip>
           )}

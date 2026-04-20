@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { Modal } from '../components/Modal'
 import { StatusCard } from '../components/StatusCard'
 import { TideBar } from '../components/TideBar'
 import { BottleGrid } from '../components/BottleGrid'
@@ -20,6 +21,7 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
   const { invoke } = useIpc()
   const [envResults, setEnvResults] = useState<EnvCheckResult[]>([])
   const [envChecked, setEnvChecked] = useState(false)
+  const [showStopConfirm, setShowStopConfirm] = useState(false)
 
   useEffect(() => {
     invoke<EnvCheckResult[]>(IPC_CHANNELS.CHECK_ENV).then((results) => {
@@ -34,6 +36,7 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
   }
 
   const handleStop = async () => {
+    setShowStopConfirm(false)
     await invoke(IPC_CHANNELS.STOP_SERVICE)
     onStatusChange('stopped')
   }
@@ -59,6 +62,30 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
 
   return (
     <div className="screen-page">
+      {/* Stop confirmation dialog */}
+      <Modal open={showStopConfirm} title="⚠️ Stop the Service?" onClose={() => setShowStopConfirm(false)}>
+        <p style={{ fontSize: 13, color: 'var(--color-text-muted)', lineHeight: 1.6, marginBottom: 16 }}>
+          If the service is mid-task, stopping it will interrupt any work in progress.
+          Are you sure you want to stop {name}?
+        </p>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+          <button
+            onClick={() => setShowStopConfirm(false)}
+            aria-label="Cancel — keep running"
+            className="btn btn--outline"
+          >
+            Keep Running
+          </button>
+          <button
+            onClick={handleStop}
+            aria-label="Confirm stop"
+            className="btn btn--danger"
+          >
+            ✋ Stop Now
+          </button>
+        </div>
+      </Modal>
+
       <header>
         <h1 className="screen-title">The Harbour</h1>
         <p className="screen-subtitle">{statusCopy}</p>
@@ -70,12 +97,12 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
       {/* First-time nudge */}
       {needsSetup && (
         <div className="nudge-banner">
-          <div style={{ fontSize: 32 }}>👋</div>
-          <div style={{ flex: 1 }}>
-            <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-primary)', marginBottom: 4 }}>
+          <div className="nudge-banner__icon">👋</div>
+          <div className="nudge-banner__body">
+            <p className="nudge-banner__title">
               Looks like you have not set up yet!
             </p>
-            <p style={{ fontSize: 13, color: 'var(--color-text-muted)', lineHeight: 1.6 }}>
+            <p className="nudge-banner__text">
               No worries — click the button below and the Setup Wizard will walk you through
               everything step by step. It only takes a minute.
             </p>
@@ -105,14 +132,49 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
 
       <StatusCard status={status} model={config.model} provider={config.provider} />
 
+      {/* OpenClaw path indicator — helps when debugging "why isn't this working" */}
+      {config.openClawPath ? (
+        <div style={{
+          marginTop: 12,
+          padding: '8px 14px',
+          background: 'var(--color-surface)',
+          border: '1px solid var(--color-border)',
+          borderRadius: 'var(--radius-md)',
+          fontSize: 12,
+          color: 'var(--color-text-muted)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+        }}>
+          <span aria-hidden="true">📂</span>
+          <span>Pointed at: <code style={{ color: 'var(--color-primary)', fontFamily: 'monospace', fontSize: 11 }}>{config.openClawPath}</code></span>
+        </div>
+      ) : (
+        <div style={{
+          marginTop: 12,
+          padding: '8px 14px',
+          background: 'rgba(240,165,0,0.06)',
+          border: '1px solid rgba(240,165,0,0.15)',
+          borderRadius: 'var(--radius-md)',
+          fontSize: 12,
+          color: 'var(--color-warning)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+        }}>
+          <span aria-hidden="true">⚠️</span>
+          <span>No OpenClaw path configured — <button onClick={() => onNavigate('deepconfig')} className="btn--link" style={{ fontSize: 12 }}>set one in Deep Config</button></span>
+        </div>
+      )}
+
       {/* Environment Readiness */}
       {envChecked && (
         <div className="card" style={{ marginTop: 20 }}>
-          <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 12, display: 'flex', alignItems: 'center' }}>
+          <h3 className="harbor__env-title">
             Environment Health
             <HelpHint text="These checks tell you if your computer has everything it needs to run OpenClaw. Green = good. Red = needs attention. Click Setup in the sidebar to fix issues." />
           </h3>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }} role="list" aria-label="Environment check results">
+          <div className="harbor__env-list" role="list" aria-label="Environment check results">
             {envResults.map((r) => (
               <Tooltip key={r.name} text={r.ok ? `${r.name} is installed and working${r.version ? ` (v${r.version})` : ''}.` : (r.message || `${r.name} needs attention.`)} position="bottom">
                 <span role="listitem" className={r.ok ? 'env-pill env-pill--ok' : 'env-pill env-pill--fail'}>
@@ -144,7 +206,7 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
         </Tooltip>
         <Tooltip text="Stop the OpenClaw service. The agent will shut down and stop accepting tasks.">
           <button
-            onClick={handleStop}
+            onClick={() => setShowStopConfirm(true)}
             disabled={!isRunning}
             aria-label="Stop the OpenClaw service"
             className={`btn ${isRunning ? 'btn--danger' : 'btn--outline'}`}
@@ -168,7 +230,7 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
         </Tooltip>
       </div>
 
-      <h2 style={{ fontSize: 16, fontWeight: 600, color: 'var(--color-text)', marginBottom: 16, display: 'flex', alignItems: 'center' }}>
+      <h2 className="harbor__section-title">
         Messages in Bottles
         <HelpHint text={`These are tasks you have sent to ${name}. Each bottle holds a past dispatch. Click one to uncork it and read the results. Cracked bottles mean something went wrong.`} />
       </h2>

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell, dialog } from 'electron'
+import { app, BrowserWindow, ipcMain, shell, dialog, Notification } from 'electron'
 import { join } from 'path'
 import { statSync } from 'fs'
 import { IPC_CHANNELS } from '../shared/ipc'
@@ -8,13 +8,30 @@ import type { RunResult } from './services/processRunner'
 import { spawnTerminal, writeTerminal, resizeTerminal, killTerminal } from './services/terminalService'
 import { getConfig, setConfig } from './services/configService'
 import { getApiKey, setApiKey, isSecureStorageAvailable } from './services/keychainService'
-import { getLogs, addLog, initLogStore } from './services/logService'
+import { getLogs, addLog, initLogStore, exportLogs, flushLogs } from './services/logService'
+import { getTasks, addTask as addTaskToStore, initTaskStore, flushTasks } from './services/taskService'
 import { translateError } from './services/translateError'
 import { initHabitStore, recordDispatch, getSuggestion } from './services/habitService'
 
 let mainWindow: BrowserWindow | null = null
 let serviceRun: RunResult | null = null
 let dispatchRun: RunResult | null = null
+let heartbeatTimer: ReturnType<typeof setInterval> | null = null
+
+/**
+ * Show a desktop notification if the app window is not focused.
+ * Useful for long-running tasks — the user may have tabbed away.
+ */
+function notifyIfUnfocused(title: string, body: string): void {
+  if (mainWindow?.isFocused()) return
+  if (!Notification.isSupported()) return
+  const notification = new Notification({ title, body })
+  notification.on('click', () => {
+    mainWindow?.show()
+    mainWindow?.focus()
+  })
+  notification.show()
+}
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -49,6 +66,7 @@ function createWindow(): void {
 app.whenReady().then(() => {
   const userData = app.getPath('userData')
   initLogStore(userData)
+  initTaskStore(userData)
   initHabitStore(userData)
   createWindow()
   app.on('activate', () => {
@@ -61,6 +79,9 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', () => {
+  stopHeartbeat()
+  flushLogs()
+  flushTasks()
   if (serviceRun) {
     killProcess(serviceRun.process)
     serviceRun = null
@@ -80,8 +101,8 @@ ipcMain.handle(IPC_CHANNELS.CHECK_ENV, async () => {
   return results
 })
 
-ipcMain.handle(IPC_CHANNELS.DETECT_PATH, () => {
-  return detectOpenClawPath()
+ipcMain.handle(IPC_CHANNELS.DETECT_PATH, async () => {
+  return await detectOpenClawPath()
 })
 
 ipcMain.handle(IPC_CHANNELS.BROWSE_FOLDER, async () => {
@@ -108,16 +129,40 @@ ipcMain.handle(IPC_CHANNELS.CHECK_SECURE_STORAGE, () => {
   return isSecureStorageAvailable()
 })
 
-ipcMain.handle(IPC_CHANNELS.GET_WELCOME_SEEN, () => {
-  return getConfig().welcomeSeen === true
+ipcMain.handle(IPC_CHANNELS.GET_WELCOME_SEEN, async () => {
+  const cfg = await getConfig()
+  return cfg.welcomeSeen === true
 })
 
-ipcMain.handle(IPC_CHANNELS.SET_WELCOME_SEEN, () => {
-  setConfig({ welcomeSeen: true })
+ipcMain.handle(IPC_CHANNELS.SET_WELCOME_SEEN, async () => {
+  await setConfig({ welcomeSeen: true })
   return { ok: true }
 })
 
 ipcMain.handle(IPC_CHANNELS.GET_LOGS, () => getLogs())
+
+ipcMain.handle(IPC_CHANNELS.EXPORT_LOGS, async () => {
+  if (!mainWindow) return { ok: false, error: 'No window available.' }
+  const result = await dialog.showSaveDialog(mainWindow, {
+    title: 'Export Tide Log',
+    defaultPath: `tide-log-${new Date().toISOString().slice(0, 10)}.txt`, // YYYY-MM-DD
+    filters: [{ name: 'Text Files', extensions: ['txt'] }],
+  })
+  if (result.canceled || !result.filePath) return { ok: false, error: 'Export cancelled.' }
+  try {
+    const { writeFile } = await import('fs/promises')
+    await writeFile(result.filePath, exportLogs(), 'utf8')
+    addLog('info', `Logs exported to ${result.filePath}`)
+    return { ok: true }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Unknown error'
+    return { ok: false, error: msg }
+  }
+})
+
+ipcMain.handle(IPC_CHANNELS.VALIDATE_PATH, (_event, path: string) => {
+  return validatePath(path)
+})
 
 ipcMain.handle(IPC_CHANNELS.RUN_SETUP, async (_event, openClawPath: string) => {
   const pathCheck = validatePath(openClawPath)
@@ -158,8 +203,10 @@ ipcMain.handle(IPC_CHANNELS.START_SERVICE, async (_event, openClawPath: string) 
         serviceRun = null
         addLog('info', 'Service process exited')
         mainWindow?.webContents.send(IPC_CHANNELS.ON_STATUS_CHANGE, 'stopped')
+        stopHeartbeat()
       }
     })
+    startHeartbeat()
     return { ok: true }
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unknown error'
@@ -169,6 +216,7 @@ ipcMain.handle(IPC_CHANNELS.START_SERVICE, async (_event, openClawPath: string) 
 })
 
 ipcMain.handle(IPC_CHANNELS.STOP_SERVICE, async () => {
+  stopHeartbeat()
   if (serviceRun) {
     killProcess(serviceRun.process)
     serviceRun = null
@@ -186,6 +234,7 @@ ipcMain.handle(IPC_CHANNELS.RESTART_SERVICE, async (_event, openClawPath: string
     addLog('error', `Restart path rejected: ${pathCheck.error}`)
     return { ok: false, error: pathCheck.error }
   }
+  stopHeartbeat()
   if (serviceRun) {
     killProcess(serviceRun.process)
     serviceRun = null
@@ -197,8 +246,10 @@ ipcMain.handle(IPC_CHANNELS.RESTART_SERVICE, async (_event, openClawPath: string
     if (serviceRun && proc === serviceRun.process) {
       serviceRun = null
       mainWindow?.webContents.send(IPC_CHANNELS.ON_STATUS_CHANGE, 'stopped')
+      stopHeartbeat()
     }
   })
+  startHeartbeat()
   return { ok: true }
 })
 
@@ -224,6 +275,7 @@ ipcMain.handle(IPC_CHANNELS.DISPATCH_TASK, async (_event, { prompt, mode, openCl
     dispatchRun = null
     addLog('info', 'Task completed')
     mainWindow?.webContents.send(IPC_CHANNELS.ON_STATUS_CHANGE, 'idle')
+    notifyIfUnfocused('🔱 Task Complete', 'Your emissary has returned to shore with results.')
     return { ok: true, output }
   } catch (err) {
     dispatchRun = null
@@ -236,6 +288,7 @@ ipcMain.handle(IPC_CHANNELS.DISPATCH_TASK, async (_event, { prompt, mode, openCl
     }
     addLog('error', `Task failed: ${msg}`)
     mainWindow?.webContents.send(IPC_CHANNELS.ON_STATUS_CHANGE, 'error')
+    notifyIfUnfocused('❌ Task Failed', 'Something went wrong. Check the app for details.')
     return { ok: false, error: msg, explanation: translateError(msg, 'dispatch') }
   }
 })
@@ -298,8 +351,60 @@ ipcMain.handle(IPC_CHANNELS.TERMINAL_KILL, async () => {
   return { ok: true }
 })
 
+// --- Task persistence ---
+
+ipcMain.handle(IPC_CHANNELS.GET_TASKS, () => getTasks())
+
+ipcMain.handle(IPC_CHANNELS.ADD_TASK, (_event, task) => {
+  return addTaskToStore(task)
+})
+
 // --- Habit suggestion ---
 
 ipcMain.handle(IPC_CHANNELS.GET_HABIT_SUGGESTION, () => {
   return getSuggestion()
 })
+
+// --- Service heartbeat ---
+
+/**
+ * Check if the service process is still alive.
+ * Returns { alive, pid } — if the process exists but is not responding,
+ * this sets the status to 'error' so the user knows something is wrong.
+ */
+ipcMain.handle(IPC_CHANNELS.SERVICE_HEARTBEAT, () => {
+  if (!serviceRun) return { alive: false, pid: null }
+  const proc = serviceRun.process
+  // A killed process has .killed === true or .exitCode !== null
+  if (proc.killed || proc.exitCode !== null) {
+    serviceRun = null
+    addLog('warning', 'Service process was found dead during heartbeat check')
+    mainWindow?.webContents.send(IPC_CHANNELS.ON_STATUS_CHANGE, 'stopped')
+    return { alive: false, pid: proc.pid ?? null }
+  }
+  return { alive: true, pid: proc.pid ?? null }
+})
+
+function startHeartbeat(): void {
+  stopHeartbeat()
+  heartbeatTimer = setInterval(() => {
+    if (!serviceRun) {
+      stopHeartbeat()
+      return
+    }
+    const proc = serviceRun.process
+    if (proc.killed || proc.exitCode !== null) {
+      serviceRun = null
+      addLog('warning', 'Service process died unexpectedly (heartbeat)')
+      mainWindow?.webContents.send(IPC_CHANNELS.ON_STATUS_CHANGE, 'stopped')
+      stopHeartbeat()
+    }
+  }, 5000) // Check every 5 seconds
+}
+
+function stopHeartbeat(): void {
+  if (heartbeatTimer) {
+    clearInterval(heartbeatTimer)
+    heartbeatTimer = null
+  }
+}

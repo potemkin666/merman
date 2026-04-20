@@ -5,28 +5,20 @@ import { useIpc } from '../hooks/useIpc'
 import { IPC_CHANNELS } from '../../../shared/ipc'
 import type { AppConfig, Preset } from '../../../shared/types'
 
+/** Known agent mode keys — must stay in sync with the Dispatch screen's AGENT_MODES */
+const KNOWN_MODES = [
+  { value: 'default', label: 'Default — general purpose' },
+  { value: 'research', label: 'Research — investigate & summarize' },
+  { value: 'code', label: 'Code — write, review, explain code' },
+  { value: 'debug', label: 'Debug — find & fix problems' },
+  { value: 'plan', label: 'Plan — outlines & step-by-step' },
+  { value: 'starter', label: 'Starter — guided, safe defaults' },
+  { value: 'advanced', label: 'Advanced — full control, no guardrails' },
+]
+
 interface DeepConfigProps {
   config: AppConfig
   onSave: (updates: Partial<AppConfig>) => Promise<AppConfig>
-}
-
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  background: 'var(--color-surface)',
-  border: '1px solid var(--color-border)',
-  borderRadius: 'var(--radius-md)',
-  padding: '10px 14px',
-  color: 'var(--color-text)',
-  fontSize: 14,
-  outline: 'none',
-}
-
-const labelStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  marginBottom: 6,
-  fontSize: 13,
-  color: 'var(--color-text-muted)',
 }
 
 export const DeepConfig: React.FC<DeepConfigProps> = ({ config, onSave }) => {
@@ -107,65 +99,56 @@ export const DeepConfig: React.FC<DeepConfigProps> = ({ config, onSave }) => {
   }
 
   return (
-    <div style={{ padding: 32, maxWidth: 700, margin: '0 auto', overflowY: 'auto', height: '100%' }}>
-      <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--color-primary)', marginBottom: 8 }}>
+    <div className="deep-config">
+      <h1 className="screen-title">
         Deep Config
       </h1>
-      <p style={{ color: 'var(--color-text-muted)', marginBottom: 24, fontSize: 14, lineHeight: 1.6 }}>
+      <p className="screen-subtitle" style={{ lineHeight: 1.6 }}>
         🔧 These are the settings that control how the app connects to OpenClaw. Hover over any <span style={{ color: 'var(--color-primary)' }}>?</span> icon for an explanation.
       </p>
 
       {/* What is this? hint */}
-      <div style={{
-        background: 'var(--color-panel)',
-        border: '1px solid var(--color-border)',
-        borderRadius: 'var(--radius-lg)',
-        padding: '14px 20px',
-        marginBottom: 24,
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: 12,
-      }}>
-        <span style={{ fontSize: 18, flexShrink: 0 }}>💡</span>
-        <p style={{ fontSize: 12, color: 'var(--color-text-muted)', lineHeight: 1.7 }}>
+      <div className="hint-box" style={{ marginBottom: 24 }}>
+        <span className="hint-box__icon">💡</span>
+        <p className="hint-box__text">
           <strong style={{ color: 'var(--color-text)' }}>Not sure what to put here?</strong> If you ran the Setup Wizard,
           most of this is already filled in. You usually only need to change these if something is not working or you
           want to switch to a different AI model.
         </p>
       </div>
 
-      <section style={{ marginBottom: 28 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, color: 'var(--color-text)' }}>
+      <section className="deep-config__section">
+        <h2 className="deep-config__section-title">
           Emissary
         </h2>
         <div>
-          <label style={labelStyle}>
+          <label className="label">
             Emissary Name
             <HelpHint text="Give your emissary a name! This name appears throughout the app — in status messages, tooltips, the Fishtank, and more. Default is 'Azurel'." />
           </label>
           <input type="text" value={form.emissaryName}
             onChange={(e) => setForm((f) => ({ ...f, emissaryName: e.target.value }))}
-            placeholder="Azurel" aria-label="Emissary name" style={inputStyle} />
-          <p style={{ marginTop: 6, fontSize: 11, color: 'var(--color-text-muted)' }}>
+            placeholder="Azurel" aria-label="Emissary name" className="input" />
+          <p className="deep-config__field-hint">
             🧜‍♂️ Your emissary will introduce himself as <strong style={{ color: 'var(--color-primary)' }}>{form.emissaryName || 'Azurel'}</strong> throughout the app.
           </p>
         </div>
       </section>
 
-      <section style={{ marginBottom: 28 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, color: 'var(--color-text)' }}>
+      <section className="deep-config__section">
+        <h2 className="deep-config__section-title">
           Paths
         </h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div className="deep-config__field-group">
           <div>
-            <label style={labelStyle}>
+            <label className="label">
               OpenClaw Path
               <HelpHint text="This is the folder on your computer where OpenClaw is installed. It should contain a file called 'package.json'. Example: /Users/you/openclaw or C:\Users\you\openclaw" />
             </label>
             <input type="text" value={form.openClawPath}
               onChange={(e) => setForm((f) => ({ ...f, openClawPath: e.target.value }))}
-              placeholder="/path/to/openclaw" aria-label="OpenClaw installation path" style={inputStyle} />
-            <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+              placeholder="/path/to/openclaw" aria-label="OpenClaw installation path" className="input" />
+            <div className="deep-config__inline-actions">
               <Tooltip text="Open a folder picker to select the OpenClaw directory. Easier than typing!">
                 <button
                   onClick={async () => {
@@ -173,16 +156,7 @@ export const DeepConfig: React.FC<DeepConfigProps> = ({ config, onSave }) => {
                     if (selected) setForm((f) => ({ ...f, openClawPath: selected }))
                   }}
                   aria-label="Browse for OpenClaw directory"
-                  style={{
-                    padding: '6px 14px',
-                    background: 'rgba(0,200,212,0.1)',
-                    color: 'var(--color-primary)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: 'var(--radius-sm)',
-                    fontSize: 12,
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                  }}
+                  className="deep-config__btn-sm"
                 >
                   📁 Browse…
                 </button>
@@ -192,16 +166,8 @@ export const DeepConfig: React.FC<DeepConfigProps> = ({ config, onSave }) => {
                   onClick={handleAutoDetect}
                   disabled={detecting}
                   aria-label={detecting ? 'Scanning for OpenClaw' : 'Auto-detect OpenClaw path'}
-                  style={{
-                    padding: '6px 14px',
-                    background: 'rgba(0,200,212,0.1)',
-                    color: 'var(--color-primary)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: 'var(--radius-sm)',
-                    fontSize: 12,
-                    fontWeight: 500,
-                    cursor: detecting ? 'wait' : 'pointer',
-                  }}
+                  className="deep-config__btn-sm"
+                  style={{ cursor: detecting ? 'wait' : 'pointer' }}
                 >
                   {detecting ? '⏳ Scanning...' : '🔍 Auto-detect'}
                 </button>
@@ -209,13 +175,13 @@ export const DeepConfig: React.FC<DeepConfigProps> = ({ config, onSave }) => {
             </div>
           </div>
           <div>
-            <label style={labelStyle}>
+            <label className="label">
               Workspace Path
               <HelpHint text="Optional. This is the folder where you want the agent to do its work (read/write files). If left empty, it defaults to the OpenClaw directory." />
             </label>
             <input type="text" value={form.workspacePath}
               onChange={(e) => setForm((f) => ({ ...f, workspacePath: e.target.value }))}
-              placeholder="/path/to/workspace (optional)" aria-label="Workspace path" style={inputStyle} />
+              placeholder="/path/to/workspace (optional)" aria-label="Workspace path" className="input" />
             <div style={{ marginTop: 6 }}>
               <Tooltip text="Open a folder picker to select a workspace directory.">
                 <button
@@ -224,16 +190,7 @@ export const DeepConfig: React.FC<DeepConfigProps> = ({ config, onSave }) => {
                     if (selected) setForm((f) => ({ ...f, workspacePath: selected }))
                   }}
                   aria-label="Browse for workspace directory"
-                  style={{
-                    padding: '6px 14px',
-                    background: 'rgba(0,200,212,0.1)',
-                    color: 'var(--color-primary)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: 'var(--radius-sm)',
-                    fontSize: 12,
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                  }}
+                  className="deep-config__btn-sm"
                 >
                   📁 Browse…
                 </button>
@@ -243,50 +200,44 @@ export const DeepConfig: React.FC<DeepConfigProps> = ({ config, onSave }) => {
         </div>
       </section>
 
-      <section style={{ marginBottom: 28 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, color: 'var(--color-text)' }}>
+      <section className="deep-config__section">
+        <h2 className="deep-config__section-title">
           Model & Provider
         </h2>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div className="deep-config__grid">
           <div>
-            <label style={labelStyle}>
+            <label className="label">
               Provider
               <HelpHint text="The company that provides the AI. Usually 'openai' (for GPT models) or 'anthropic' (for Claude models). If you are not sure, leave it as 'openai'." />
             </label>
             <input type="text" value={form.provider}
               onChange={(e) => setForm((f) => ({ ...f, provider: e.target.value }))}
-              placeholder="openai" aria-label="AI provider" style={inputStyle} />
+              placeholder="openai" aria-label="AI provider" className="input" />
           </div>
           <div>
-            <label style={labelStyle}>
+            <label className="label">
               Model
               <HelpHint text="The specific AI model to use. 'gpt-4o' is a good default. Other options include 'gpt-3.5-turbo' (faster, cheaper) or 'claude-3-opus' (if using Anthropic)." />
             </label>
             <input type="text" value={form.model}
               onChange={(e) => setForm((f) => ({ ...f, model: e.target.value }))}
-              placeholder="gpt-4o" aria-label="AI model" style={inputStyle} />
+              placeholder="gpt-4o" aria-label="AI model" className="input" />
           </div>
         </div>
         <div style={{ marginTop: 16 }}>
-          <label style={labelStyle}>
+          <label className="label">
             API Key
             <HelpHint text="A secret key from your AI provider that lets the agent talk to the AI service. Get one from platform.openai.com (for OpenAI) or console.anthropic.com (for Anthropic). It starts with 'sk-'. Keep it private!" />
           </label>
           <input type="password" value={apiKey}
             onChange={(e) => setApiKeyState(e.target.value)}
-            placeholder="sk-..." aria-label="API key" style={inputStyle} />
+            placeholder="sk-..." aria-label="API key" className="input" />
           {secureStorageAvailable ? (
-            <p style={{ marginTop: 6, fontSize: 11, color: 'var(--color-text-muted)' }}>
+            <p className="deep-config__field-hint">
               🔒 This key is stored securely using your operating system&apos;s keychain. It is never saved as plain text.
             </p>
           ) : (
-            <div style={{
-              marginTop: 8,
-              background: 'rgba(232,93,93,0.1)',
-              border: '1px solid rgba(232,93,93,0.3)',
-              borderRadius: 'var(--radius-md)',
-              padding: '10px 14px',
-            }}>
+            <div className="deep-config__secure-warning">
               <p style={{ fontSize: 12, color: 'var(--color-error)', fontWeight: 600, marginBottom: 4 }}>
                 ⚠️ Secure storage is not available on this system
               </p>
@@ -295,16 +246,7 @@ export const DeepConfig: React.FC<DeepConfigProps> = ({ config, onSave }) => {
                 this app can use. <strong style={{ color: 'var(--color-text)' }}>The API key will not be saved between sessions.</strong> To
                 keep your key available, set it as an environment variable instead:
               </p>
-              <code style={{
-                display: 'block',
-                marginTop: 6,
-                fontSize: 11,
-                fontFamily: 'monospace',
-                color: 'var(--color-primary)',
-                background: 'var(--color-surface)',
-                padding: '6px 10px',
-                borderRadius: 'var(--radius-sm)',
-              }}>
+              <code className="deep-config__code-block">
                 export OPENAI_API_KEY=sk-...
               </code>
             </div>
@@ -312,70 +254,54 @@ export const DeepConfig: React.FC<DeepConfigProps> = ({ config, onSave }) => {
         </div>
       </section>
 
-      <section style={{ marginBottom: 28 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, color: 'var(--color-text)', display: 'flex', alignItems: 'center' }}>
+      <section className="deep-config__section">
+        <h2 className="deep-config__section-title deep-config__section-title--flex">
           Saved Presets
           <HelpHint text="Presets are shortcuts for different task types. Each preset has a name and a 'mode' that tells the agent how to behave. You can create your own or use the built-in ones." />
         </h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+        <div className="deep-config__preset-list">
           {form.presets.map((p) => (
-            <div key={p.id} style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              padding: '10px 14px',
-              background: 'var(--color-surface)',
-              border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-md)',
-            }}>
-              <span style={{ flex: 1, fontSize: 14 }}>{p.name}</span>
-              <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{p.mode}</span>
+            <div key={p.id} className="deep-config__preset-item">
+              <span className="deep-config__preset-name">{p.name}</span>
+              <span className="deep-config__preset-mode">{p.mode}</span>
               <Tooltip text="Remove this preset from your list.">
-                <button onClick={() => removePreset(p.id)} aria-label={`Remove preset ${p.name}`} style={{
-                  background: 'transparent',
-                  color: 'var(--color-error)',
-                  fontSize: 16,
-                  cursor: 'pointer',
-                }}>×</button>
+                <button onClick={() => removePreset(p.id)} aria-label={`Remove preset ${p.name}`} className="deep-config__preset-remove">×</button>
               </Tooltip>
             </div>
           ))}
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="deep-config__preset-inputs">
           <input type="text" value={newPreset.name}
             onChange={(e) => setNewPreset((p) => ({ ...p, name: e.target.value }))}
-            placeholder="Preset name" aria-label="New preset name" style={{ ...inputStyle, flex: 1 }} />
-          <input type="text" value={newPreset.mode}
+            placeholder="Preset name" aria-label="New preset name" className="input" style={{ flex: 1 }} />
+          <select
+            value={newPreset.mode}
             onChange={(e) => setNewPreset((p) => ({ ...p, mode: e.target.value }))}
-            placeholder="Mode key" aria-label="New preset mode key" style={{ ...inputStyle, flex: 1 }} />
-          <Tooltip text="Add a new custom preset. Enter a name and a mode key (like 'code' or 'research'), then click +.">
-            <button onClick={addPreset} aria-label="Add new preset" style={{
-              padding: '10px 16px',
-              background: 'var(--color-secondary)',
-              color: 'var(--color-text)',
-              borderRadius: 'var(--radius-md)',
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-            }}>
-              + Add
-            </button>
-          </Tooltip>
+            aria-label="New preset mode key"
+            className="input"
+            style={{ flex: 1 }}
+          >
+            <option value="">Select a mode…</option>
+            {KNOWN_MODES.map((m) => (
+              <option key={m.value} value={m.value}>{m.label}</option>
+            ))}
+          </select>
+          {(() => {
+            const canAdd = Boolean(newPreset.name && newPreset.mode)
+            return (
+              <Tooltip text={canAdd ? 'Add a new custom preset.' : 'Enter a name and select a mode first.'}>
+                <button onClick={addPreset} disabled={!canAdd} aria-label="Add new preset" className="deep-config__add-btn" style={{ opacity: canAdd ? 1 : 0.5, cursor: canAdd ? 'pointer' : 'not-allowed' }}>
+                  + Add
+                </button>
+              </Tooltip>
+            )
+          })()}
         </div>
       </section>
 
       <Tooltip text="Save all the settings you have changed. They will be remembered next time you open the app.">
-        <button onClick={handleSave} disabled={saving} aria-label={saving ? 'Saving configuration' : saved ? 'Configuration saved' : 'Save configuration'} style={{
-          padding: '12px 32px',
+        <button onClick={handleSave} disabled={saving} aria-label={saving ? 'Saving configuration' : saved ? 'Configuration saved' : 'Save configuration'} className="deep-config__save-btn" style={{
           background: saved ? 'var(--color-success)' : 'var(--color-primary)',
-          color: '#0a0f1e',
-          borderRadius: 'var(--radius-md)',
-          fontSize: 15,
-          fontWeight: 700,
-          cursor: 'pointer',
-          boxShadow: 'var(--glow-primary)',
-          transition: 'all 0.2s',
         }}>
           {saving ? '⏳ Saving...' : saved ? '✅ Saved!' : '💾 Save Configuration'}
         </button>
