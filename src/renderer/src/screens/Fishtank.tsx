@@ -1,10 +1,19 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import type { ServiceStatus, TaskResult } from '../../../shared/types'
+import { useIpc } from '../hooks/useIpc'
+import { IPC_CHANNELS } from '../../../shared/ipc'
 import { SeabedCanvas } from '../components/SeabedCanvas'
+
+interface DroppedPathInfo {
+  path: string
+  isDirectory: boolean
+}
 
 interface FishtankProps {
   status: ServiceStatus
   recentTasks?: TaskResult[]
+  onWorkspacePathSet?: (path: string) => void
+  onFilesAttached?: (paths: string[]) => void
 }
 
 // --- Weather system ---
@@ -331,7 +340,8 @@ function getClickResponse(status: ServiceStatus, recentTasks: TaskResult[], clic
   return defaultClicks[Math.floor(Math.random() * defaultClicks.length)]
 }
 
-export const Fishtank: React.FC<FishtankProps> = ({ status, recentTasks = [] }) => {
+export const Fishtank: React.FC<FishtankProps> = ({ status, recentTasks = [], onWorkspacePathSet, onFilesAttached }) => {
+  const { invoke } = useIpc()
   const [animation, setAnimation] = useState<EmissaryAnimation>('floating')
   const [saying, setSaying] = useState('')
   const [sayingKey, setSayingKey] = useState(0)
@@ -342,6 +352,9 @@ export const Fishtank: React.FC<FishtankProps> = ({ status, recentTasks = [] }) 
   const [tankSize, setTankSize] = useState({ width: 800, height: 420 })
   const [weather, setWeather] = useState<Weather>('calm')
   const [lightningFlash, setLightningFlash] = useState(false)
+  const [dragOver, setDragOver] = useState(false)
+  const [catchAnimation, setCatchAnimation] = useState(false)
+  const [catchMessage, setCatchMessage] = useState('')
 
   // Derive weather from status + recent tasks
   useEffect(() => {
@@ -385,6 +398,78 @@ export const Fishtank: React.FC<FishtankProps> = ({ status, recentTasks = [] }) 
     setSaying(response)
     setSayingKey(k => k + 1)
   }, [status, recentTasks, clickCount])
+
+  // --- Drag-and-drop handlers ---
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragOver(true)
+  }, [])
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragOver(false)
+  }, [])
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragOver(false)
+
+    const files = e.dataTransfer?.files
+    if (!files || files.length === 0) return
+
+    // Collect the file paths from the drop event
+    const paths: string[] = []
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i]
+      // Electron exposes `path` on File objects
+      const filePath = (f as File & { path?: string }).path
+      if (filePath) paths.push(filePath)
+    }
+    if (paths.length === 0) return
+
+    // Trigger "catch" animation
+    setCatchAnimation(true)
+    setTimeout(() => setCatchAnimation(false), 1200)
+
+    // Resolve file types via IPC
+    try {
+      const resolved = await invoke<DroppedPathInfo[]>(IPC_CHANNELS.RESOLVE_DROPPED_PATHS, paths)
+
+      const directories = resolved.filter(r => r.isDirectory)
+      const regularFiles = resolved.filter(r => !r.isDirectory)
+
+      if (directories.length > 0 && onWorkspacePathSet) {
+        // Use the first dropped directory as the workspace path
+        onWorkspacePathSet(directories[0].path)
+        setCatchMessage(`📂 Caught! Workspace set to ${directories[0].path.split('/').pop() || directories[0].path.split('\\').pop() || 'folder'}`)
+        setSaying('*catches the folder expertly* Your new workspace, as commanded!')
+        setSayingKey(k => k + 1)
+      } else if (regularFiles.length > 0 && onFilesAttached) {
+        onFilesAttached(regularFiles.map(r => r.path))
+        const count = regularFiles.length
+        setCatchMessage(`📎 Caught ${count} file${count > 1 ? 's' : ''}! Attached for your next dispatch.`)
+        setSaying(count === 1
+          ? '*snatches the file from the water* Got it! Ready for your next dispatch.'
+          : `*gathers ${count} items from the current* All collected! Ready for dispatch.`)
+        setSayingKey(k => k + 1)
+      } else {
+        setCatchMessage('🤔 Dropped, but nothing to do — try a folder or file!')
+        setSaying('*reaches for it but misses* Hmm, I could not quite catch that one.')
+        setSayingKey(k => k + 1)
+      }
+    } catch {
+      setCatchMessage('❌ Could not process the dropped items.')
+      setSaying('*fumbles* Something went wrong catching that...')
+      setSayingKey(k => k + 1)
+    }
+
+    // Clear catch message after a few seconds
+    setTimeout(() => setCatchMessage(''), 4000)
+  }, [invoke, onWorkspacePathSet, onFilesAttached])
+
   // Cycle animations every 5–10 seconds
   useEffect(() => {
     const pick = () => {
@@ -467,28 +552,90 @@ export const Fishtank: React.FC<FishtankProps> = ({ status, recentTasks = [] }) 
       </h1>
       <p style={{ color: 'var(--color-text-muted)', marginBottom: 24, fontSize: 14 }}>
         🐠 Peer into the depths and see what the emissary is up to.
+        <span style={{ fontSize: 12, color: 'var(--color-text-muted)', opacity: 0.7, marginLeft: 8 }}>
+          Drop files or folders here — the emissary will catch them!
+        </span>
       </p>
+
+      {/* Catch message toast */}
+      {catchMessage && (
+        <div style={{
+          background: 'var(--color-panel)',
+          border: '1px solid var(--color-border)',
+          borderRadius: 'var(--radius-md)',
+          padding: '8px 16px',
+          marginBottom: 12,
+          fontSize: 13,
+          color: 'var(--color-text)',
+          animation: 'fadeInSaying 0.3s ease-out',
+        }}>
+          {catchMessage}
+        </div>
+      )}
 
       {/* The tank */}
       <div
         ref={tankRef}
         role="img"
-        aria-label={`Fishtank: the emissary is ${ANIMATION_LABELS[animation].toLowerCase()}. Status: ${getStatusText(status)}. Weather: ${weather}.`}
+        aria-label={`Fishtank: the emissary is ${ANIMATION_LABELS[animation].toLowerCase()}. Status: ${getStatusText(status)}. Weather: ${weather}. You can drag and drop files here.`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
         style={{
         flex: 1,
         minHeight: 420,
         background: WEATHER_BACKGROUNDS[weather],
-        border: weather === 'thunderstorm' ? '2px solid rgba(232,93,93,0.3)' : weather === 'golden' ? '2px solid rgba(240,200,80,0.3)' : '2px solid rgba(0, 200, 212, 0.2)',
+        border: dragOver
+          ? '2px solid var(--color-accent)'
+          : weather === 'thunderstorm' ? '2px solid rgba(232,93,93,0.3)' : weather === 'golden' ? '2px solid rgba(240,200,80,0.3)' : '2px solid rgba(0, 200, 212, 0.2)',
         borderRadius: 20,
         position: 'relative',
         overflow: 'hidden',
-        boxShadow: weather === 'thunderstorm'
+        boxShadow: dragOver
+          ? 'inset 0 0 80px rgba(201,162,39,0.12), 0 0 30px rgba(201,162,39,0.1)'
+          : weather === 'thunderstorm'
           ? 'inset 0 0 100px rgba(232,93,93,0.08), 0 0 50px rgba(232,93,93,0.06)'
           : weather === 'golden'
           ? 'inset 0 0 100px rgba(240,200,80,0.08), 0 0 50px rgba(240,200,80,0.06)'
           : 'inset 0 0 100px rgba(0, 200, 212, 0.06), 0 0 50px rgba(0, 200, 212, 0.08)',
-        transition: 'background 2s ease, border-color 2s ease, box-shadow 2s ease',
+        transition: 'background 2s ease, border-color 0.3s ease, box-shadow 0.3s ease',
       }}>
+        {/* Drag-over overlay */}
+        {dragOver && (
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'rgba(201,162,39,0.08)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 20,
+            pointerEvents: 'none',
+          }}>
+            <div style={{
+              padding: '16px 28px',
+              background: 'rgba(4,16,32,0.85)',
+              border: '2px dashed var(--color-accent)',
+              borderRadius: 'var(--radius-lg)',
+              color: 'var(--color-accent)',
+              fontSize: 16,
+              fontWeight: 600,
+              textAlign: 'center',
+            }}>
+              🎣 Drop here — the emissary is ready to catch!
+            </div>
+          </div>
+        )}
+
+        {/* Catch animation overlay */}
+        {catchAnimation && (
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'radial-gradient(circle at 50% 45%, rgba(201,162,39,0.15) 0%, transparent 60%)',
+            pointerEvents: 'none',
+            zIndex: 15,
+            animation: 'fadeInSaying 0.3s ease-out',
+          }} />
+        )}
         {/* Lightning flash overlay */}
         {lightningFlash && (
           <div style={{

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useIpc } from '../hooks/useIpc'
 import { Tooltip } from '../components/Tooltip'
 import { HelpHint } from '../components/Tooltip'
+import { AdvancedConfirmDialog } from '../components/AdvancedConfirmDialog'
 import { IPC_CHANNELS } from '../../../shared/ipc'
 import type { AppConfig, TaskResult, Preset, CommandResult } from '../../../shared/types'
 
@@ -26,6 +27,7 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
   const [result, setResult] = useState<CommandResult | null>(null)
   const [elapsed, setElapsed] = useState(0)
   const [cancelling, setCancelling] = useState(false)
+  const [showAdvancedConfirm, setShowAdvancedConfirm] = useState(false)
   const elapsedRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // Elapsed time counter during dispatch
@@ -71,6 +73,15 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
 
   const handleDispatch = async () => {
     if (!prompt.trim()) return
+
+    // If the selected mode is "advanced" (Advanced Custom preset), require confirmation first
+    const isAdvancedMode = mode === 'advanced'
+    if (isAdvancedMode && !showAdvancedConfirm) {
+      setShowAdvancedConfirm(true)
+      return
+    }
+
+    setShowAdvancedConfirm(false)
     setDispatching(true)
     setResult(null)
 
@@ -101,6 +112,15 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
 
   return (
     <div style={{ padding: 32, maxWidth: 900, margin: '0 auto' }}>
+      {/* Advanced Custom confirmation dialog */}
+      <AdvancedConfirmDialog
+        open={showAdvancedConfirm}
+        prompt={prompt.trim()}
+        openClawPath={config.openClawPath}
+        onConfirm={handleDispatch}
+        onCancel={() => setShowAdvancedConfirm(false)}
+      />
+
       <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--color-primary)', marginBottom: 8 }}>
         Dispatch
       </h1>

@@ -1,12 +1,13 @@
 import { app, BrowserWindow, ipcMain, shell, dialog } from 'electron'
 import { join } from 'path'
+import { statSync } from 'fs'
 import type { ChildProcess } from 'child_process'
 import { IPC_CHANNELS } from '../shared/ipc'
 import { checkEnvironment, detectOpenClawPath } from './services/envChecker'
 import { runCommand, killProcess, validatePath } from './services/processRunner'
 import { spawnTerminal, writeTerminal, resizeTerminal, killTerminal } from './services/terminalService'
 import { getConfig, setConfig } from './services/configService'
-import { getApiKey, setApiKey } from './services/keychainService'
+import { getApiKey, setApiKey, isSecureStorageAvailable } from './services/keychainService'
 import { getLogs, addLog } from './services/logService'
 import { translateError } from './services/translateError'
 
@@ -96,8 +97,11 @@ ipcMain.handle(IPC_CHANNELS.SET_CONFIG, (_event, updates) => setConfig(updates))
 ipcMain.handle(IPC_CHANNELS.GET_API_KEY, () => getApiKey())
 
 ipcMain.handle(IPC_CHANNELS.SET_API_KEY, (_event, key: string) => {
-  setApiKey(key)
-  return { ok: true }
+  return setApiKey(key)
+})
+
+ipcMain.handle(IPC_CHANNELS.CHECK_SECURE_STORAGE, () => {
+  return isSecureStorageAvailable()
 })
 
 ipcMain.handle(IPC_CHANNELS.GET_WELCOME_SEEN, () => {
@@ -240,6 +244,20 @@ ipcMain.handle(IPC_CHANNELS.CANCEL_TASK, async () => {
     return { ok: true }
   }
   return { ok: false, error: 'No active task to cancel.' }
+})
+
+// --- Dropped file/folder resolution ---
+
+ipcMain.handle(IPC_CHANNELS.RESOLVE_DROPPED_PATHS, async (_event, paths: string[]) => {
+  const results = paths.map((p) => {
+    try {
+      const stat = statSync(p)
+      return { path: p, isDirectory: stat.isDirectory() }
+    } catch {
+      return { path: p, isDirectory: false }
+    }
+  })
+  return results
 })
 
 // --- Terminal IPC Handlers ---
