@@ -1,4 +1,5 @@
 import type { ServiceStatus } from '../../../../shared/types'
+import type { Weather } from './weather'
 
 // --- Expanded idle animations ---
 export type EmissaryAnimation =
@@ -98,4 +99,41 @@ export function getEmissaryStyle(animation: EmissaryAnimation, status: ServiceSt
     'examining-scroll': 'emissaryFloat 5s ease-in-out infinite',
   }
   return { ...base, animation: map[animation] || 'emissaryFloat 4s ease-in-out infinite' }
+}
+
+// ── Emotion mapping for PNG sprite selection ──────────────────────────────────
+
+export type EmissaryEmotion = 'smug' | 'laughing' | 'waving' | 'crying'
+
+/**
+ * Derives which of the four merman portrait images to display based on the
+ * current animation, service status, and weather state.
+ *
+ * Priority (highest → lowest):
+ *   1. Error status or thunderstorm → crying
+ *   2. Running status or waving/beckoning animation → waving
+ *   3. Golden weather or playful/energetic animations → laughing
+ *   4. Everything else → smug (default idle)
+ */
+export function getEmissaryEmotion(
+  animation: EmissaryAnimation,
+  status: ServiceStatus,
+  weather: Weather,
+): EmissaryEmotion {
+  if (status === 'error' || weather === 'thunderstorm') return 'crying'
+  if (
+    status === 'running' ||
+    animation === 'waving' ||
+    animation === 'beckoning'
+  ) return 'waving'
+  if (
+    weather === 'golden' ||
+    animation === 'flirty' ||
+    animation === 'flexing' ||
+    animation === 'singing' ||
+    animation === 'collecting-pearls' ||
+    animation === 'chasing-fish' ||
+    animation === 'juggling-shells'
+  ) return 'laughing'
+  return 'smug'
 }
