@@ -1,5 +1,5 @@
 import { execFile } from 'child_process'
-import { existsSync } from 'fs'
+import { existsSync, readdirSync, statSync } from 'fs'
 import { join } from 'path'
 import type { EnvCheckResult } from '../../shared/types'
 import { getConfig } from './configService'
@@ -102,13 +102,26 @@ export async function checkEnvironment(): Promise<EnvCheckResult[]> {
 }
 
 /**
- * Search common locations for an OpenClaw installation directory.
+ * Search for an OpenClaw installation directory.
+ *
+ * Priority order:
+ * 1. The currently-configured openClawPath (if it's valid)
+ * 2. Common hardcoded candidate directories
+ * 3. Git clone directories — scan common parent folders for repos named "openclaw"
+ *
  * Returns the first path that contains a package.json, or empty string.
  */
 export function detectOpenClawPath(): string {
   const home = process.env.HOME || process.env.USERPROFILE || ''
   if (!home) return ''
 
+  // 1. Check the already-configured path first
+  const config = getConfig()
+  if (config.openClawPath && isValidOpenClawDir(config.openClawPath)) {
+    return config.openClawPath
+  }
+
+  // 2. Check common hardcoded candidates
   const candidates = [
     join(home, 'openclaw'),
     join(home, 'OpenClaw'),
@@ -129,9 +142,58 @@ export function detectOpenClawPath(): string {
   ]
 
   for (const dir of candidates) {
-    if (existsSync(dir) && existsSync(join(dir, 'package.json'))) {
+    if (isValidOpenClawDir(dir)) {
       return dir
     }
+  }
+
+  // 3. Scan common parent directories for git clones named "openclaw"
+  const parentDirs = [
+    join(home, 'projects'),
+    join(home, 'dev'),
+    join(home, 'src'),
+    join(home, 'code'),
+    join(home, 'repos'),
+    join(home, 'Documents'),
+    join(home, 'Desktop'),
+    home,
+  ]
+
+  for (const parent of parentDirs) {
+    const match = scanForOpenClawRepo(parent)
+    if (match) return match
+  }
+
+  return ''
+}
+
+/** Check whether a directory looks like a valid OpenClaw installation. */
+function isValidOpenClawDir(dir: string): boolean {
+  return existsSync(dir) && existsSync(join(dir, 'package.json'))
+}
+
+/**
+ * Scan a parent directory's immediate children for a git repo whose
+ * folder name matches "openclaw" (case-insensitive) and contains a package.json.
+ */
+function scanForOpenClawRepo(parentDir: string): string {
+  if (!existsSync(parentDir)) return ''
+  try {
+    const entries = readdirSync(parentDir)
+    for (const name of entries) {
+      if (name.toLowerCase() !== 'openclaw') continue
+      const candidate = join(parentDir, name)
+      try {
+        if (!statSync(candidate).isDirectory()) continue
+      } catch {
+        continue
+      }
+      if (existsSync(join(candidate, '.git')) && existsSync(join(candidate, 'package.json'))) {
+        return candidate
+      }
+    }
+  } catch {
+    // Permission denied or other fs error — skip this parent
   }
   return ''
 }

@@ -5,6 +5,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('fs', () => ({
   existsSync: vi.fn(),
+  readdirSync: vi.fn(),
+  statSync: vi.fn(),
 }))
 
 vi.mock('../configService', () => ({
@@ -16,7 +18,7 @@ vi.mock('child_process', () => ({
   execFile: vi.fn(),
 }))
 
-import { existsSync } from 'fs'
+import { existsSync, readdirSync, statSync } from 'fs'
 import { execFile } from 'child_process'
 import { getConfig } from '../configService'
 import { checkEnvironment, detectOpenClawPath } from '../envChecker'
@@ -24,6 +26,8 @@ import { checkEnvironment, detectOpenClawPath } from '../envChecker'
 const mockExistsSync = vi.mocked(existsSync)
 const mockGetConfig = vi.mocked(getConfig)
 const mockExecFile = vi.mocked(execFile)
+const mockReaddirSync = vi.mocked(readdirSync)
+const mockStatSync = vi.mocked(statSync)
 
 describe('envChecker', () => {
   beforeEach(() => {
@@ -148,8 +152,34 @@ describe('envChecker', () => {
       if (origUserProfile !== undefined) process.env.USERPROFILE = origUserProfile
     })
 
-    it('returns the first matching path with package.json', () => {
+    it('returns the configured openClawPath first if it is valid', () => {
+      mockGetConfig.mockReturnValue({
+        openClawPath: '/configured/openclaw',
+        workspacePath: '',
+        model: 'gpt-4o',
+        provider: 'openai',
+        apiKey: '',
+        presets: [],
+      })
+      mockExistsSync.mockImplementation((p: unknown) => {
+        const path = String(p)
+        return path === '/configured/openclaw' || path === '/configured/openclaw/package.json'
+      })
+
+      const result = detectOpenClawPath()
+      expect(result).toBe('/configured/openclaw')
+    })
+
+    it('returns the first matching hardcoded path with package.json', () => {
       const home = process.env.HOME || '/home/test'
+      mockGetConfig.mockReturnValue({
+        openClawPath: '',
+        workspacePath: '',
+        model: 'gpt-4o',
+        provider: 'openai',
+        apiKey: '',
+        presets: [],
+      })
       mockExistsSync.mockImplementation((p: unknown) => {
         const path = String(p)
         if (path === `${home}/openclaw`) return true
@@ -159,6 +189,38 @@ describe('envChecker', () => {
 
       const result = detectOpenClawPath()
       expect(result).toBe(`${home}/openclaw`)
+    })
+
+    it('finds git clones named openclaw in parent directories', () => {
+      const home = process.env.HOME || '/home/test'
+      mockGetConfig.mockReturnValue({
+        openClawPath: '',
+        workspacePath: '',
+        model: 'gpt-4o',
+        provider: 'openai',
+        apiKey: '',
+        presets: [],
+      })
+      // No hardcoded candidates exist
+      mockExistsSync.mockImplementation((p: unknown) => {
+        const path = String(p)
+        // Only the git-cloned folder in ~/projects exists
+        if (path === `${home}/projects`) return true
+        if (path === `${home}/projects/OpenClaw/.git`) return true
+        if (path === `${home}/projects/OpenClaw/package.json`) return true
+        return false
+      })
+      mockReaddirSync.mockImplementation((p: unknown) => {
+        const path = String(p)
+        if (path === `${home}/projects`) return ['some-other-repo', 'OpenClaw'] as unknown as ReturnType<typeof readdirSync>
+        return [] as unknown as ReturnType<typeof readdirSync>
+      })
+      mockStatSync.mockImplementation((_p: unknown) => {
+        return { isDirectory: () => true } as ReturnType<typeof statSync>
+      })
+
+      const result = detectOpenClawPath()
+      expect(result).toBe(`${home}/projects/OpenClaw`)
     })
   })
 })
