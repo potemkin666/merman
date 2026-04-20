@@ -1,0 +1,42 @@
+export interface AppConfig {
+  openClawPath: string
+  workspacePath: string
+  model: string
+  provider: string
+  apiKey: string
+  presets: Preset[]
+}
+
+export interface LogEntry {
+  id: string
+  timestamp: string
+  level: 'info' | 'warning' | 'error'
+  message: string
+  raw?: string
+}
+
+export interface EnvCheckResult {
+  name: string
+  version?: string
+  ok: boolean
+  message?: string
+}
+
+export interface TaskResult {
+  id: string
+  prompt: string
+  mode: string
+  status: 'pending' | 'running' | 'done' | 'error'
+  output?: string
+  startedAt: string
+  finishedAt?: string
+}
+
+export type ServiceStatus = 'idle' | 'running' | 'stopped' | 'error'
+
+export interface Preset {
+  id: string
+  name: string
+  mode: string
+  description?: string
+}

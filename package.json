@@ -1,0 +1,29 @@
+{
+  "name": "openclaw-harbor",
+  "version": "1.0.0",
+  "description": "OpenClaw Harbor - Desktop companion for OpenClaw",
+  "main": "./out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "start": "electron ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.5",
+    "@types/react": "^18.2.48",
+    "@types/react-dom": "^18.2.18",
+    "@vitejs/plugin-react": "^4.2.1",
+    "electron": "^28.2.0",
+    "electron-vite": "^2.0.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.12"
+  }
+}
