@@ -1,6 +1,6 @@
 @echo off
 setlocal enabledelayedexpansion
-title OpenClaw Harbor - Starting...
+title 🐟 OpenClaw Harbor
 color 1F
 
 REM Always run from the directory this script lives in
@@ -77,10 +77,13 @@ if "!NEED_INSTALL!"=="1" (
     echo.
     call npm run rebuild 2>nul
     if %ERRORLEVEL% neq 0 (
-        echo   ⚠️  Native rebuild had warnings ^(non-fatal — the app will still work^).
+        echo   ⚠️  Native module build skipped — Visual Studio not found.
+        echo      The terminal will use a basic shell instead.
+        echo      Install Visual Studio Build Tools to enable full PTY support.
+        echo      See: https://aka.ms/vs/buildtools
+    ) else (
+        echo   ✅  Native modules built successfully!
     )
-    echo.
-    echo   ✅  Rebuild complete!
     echo.
 )
 

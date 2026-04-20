@@ -127,9 +127,9 @@ export function getSuggestion(): HabitSuggestion | null {
 
   let text: string
   if (latestExample && latestExample.promptSummary.length > 10) {
-    text = `Commander, you usually run ${modeLabel} tasks around this hour ${timeDescription}. Something like "${latestExample.promptSummary}"... Shall I?`
+    text = `I have observed that you tend toward ${modeLabel} tasks at this hour ${timeDescription}. Your last: "${latestExample.promptSummary}". I find I am... already anticipating it. Shall I prepare?`
   } else {
-    text = `Commander, you often dispatch ${modeLabel} tasks around this time ${timeDescription}. Shall I prepare one?`
+    text = `I have noted a pattern — ${modeLabel} work, around this time ${timeDescription}. I am... ready, if you are. Shall I?`
   }
 
   return { text, mode: topMode, confidence }
