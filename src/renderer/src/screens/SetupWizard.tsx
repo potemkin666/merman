@@ -68,7 +68,14 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
     try {
       if (checkName === 'Node.js' || checkName === 'npm') {
         await invoke(IPC_CHANNELS.OPEN_EXTERNAL, 'https://nodejs.org/en/download/')
-        setFixMessage('Opening the Node.js download page in your browser. Install it, then click "Run Checks" again.')
+        setFixMessage(
+          'Opening the Node.js download page in your browser. Install it, then click "Run Checks" again. ' +
+          'Windows users: after installing Node.js, open PowerShell and run ' +
+          '"Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned" — ' +
+          'this command shows NO confirmation prompt; a bare PS> line means it worked, do not type Y after it. ' +
+          'Then run "npm install -g openclaw@latest". ' +
+          'When you see "added N packages" it is done — the "npm warn deprecated" lines are normal and harmless.'
+        )
       } else if (checkName === 'git') {
         await invoke(IPC_CHANNELS.OPEN_EXTERNAL, 'https://git-scm.com/downloads')
         setFixMessage('Opening the Git download page in your browser. Install it, then click "Run Checks" again.')
@@ -239,6 +246,49 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
               <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 8 }}>
                 💡 <em>No command line or terminal knowledge required. We handle everything.</em>
               </p>
+            </div>
+            <div className="setup-wizard__info-box" style={{ marginTop: 12, borderLeft: '3px solid var(--color-primary)' }}>
+              <p style={{ fontSize: 13, color: 'var(--color-text)', lineHeight: 1.6, marginBottom: 6 }}>
+                <strong>🪟 Windows users — first-time setup</strong>
+              </p>
+              <p style={{ fontSize: 12, color: 'var(--color-text-muted)', lineHeight: 1.7, marginBottom: 8 }}>
+                Before installing OpenClaw, Windows PowerShell needs permission to run scripts.
+                Open <strong>PowerShell</strong> (search for it in the Start menu) and run these two commands in order:
+              </p>
+              <div style={{ marginBottom: 10 }}>
+                <code style={{
+                  display: 'block',
+                  background: 'rgba(0,0,0,0.25)',
+                  borderRadius: 4,
+                  padding: '6px 10px',
+                  fontSize: 12,
+                  color: 'var(--color-primary)',
+                  marginBottom: 4,
+                  wordBreak: 'break-all',
+                }}>
+                  Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+                </code>
+                <p style={{ fontSize: 11, color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.6 }}>
+                  ✅ <strong>This command gives no confirmation prompt.</strong> If it just shows a new <code style={{ color: 'var(--color-primary)' }}>PS&gt;</code> line with no error, it worked. Do <em>not</em> type &quot;y&quot; or &quot;Y&quot; after it — that is a separate command and will cause an error.
+                </p>
+              </div>
+              <div style={{ marginBottom: 4 }}>
+                <code style={{
+                  display: 'block',
+                  background: 'rgba(0,0,0,0.25)',
+                  borderRadius: 4,
+                  padding: '6px 10px',
+                  fontSize: 12,
+                  color: 'var(--color-primary)',
+                  marginBottom: 4,
+                  wordBreak: 'break-all',
+                }}>
+                  npm install -g openclaw@latest
+                </code>
+                <p style={{ fontSize: 11, color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.6 }}>
+                  ✅ <strong>This takes 1–3 minutes.</strong> You will see many &quot;npm warn deprecated&quot; lines — those are normal and harmless. When you see <strong>&quot;added N packages&quot;</strong>, it is done.
+                </p>
+              </div>
             </div>
           </div>
         )}
