@@ -251,7 +251,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
             </h2>
             <p style={{ color: 'var(--color-text-muted)', fontSize: 13, marginBottom: 16, lineHeight: 1.6 }}>
               We need a few things installed on your computer. Click the button below and we will check automatically.
-              If anything is missing, we will fix it for you.
+              If anything is missing, we will guide you through fixing it.
             </p>
             <Tooltip text="Click this to scan your system. It checks for Node.js (runs JavaScript), npm (installs packages), and git (version control). Takes about 2 seconds.">
               <button onClick={checkPrereqs} disabled={checking} aria-label={checking ? 'Checking prerequisites' : 'Run prerequisite checks'} className="btn btn--primary">
@@ -311,7 +311,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
                 ))}
                 {!allPrereqsOk && (
                   <div className="setup-wizard__status-banner--warning">
-                    <strong>Some checks did not pass.</strong> Click &quot;🔧 Fix&quot; next to any failing item and we will sort it out.
+                    <strong>Some checks did not pass.</strong> Click &quot;🔧 Fix&quot; next to any failing item for guidance on what to do.
                     Then click &quot;Run Checks&quot; again to confirm.
                   </div>
                 )}
