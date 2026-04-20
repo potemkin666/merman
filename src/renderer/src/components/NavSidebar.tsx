@@ -9,7 +9,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'harbor', label: 'Harbor', icon: '🏠', tooltip: 'Your home base — see if everything is running, start or stop the service, and view recent tasks.' },
+  { id: 'harbor', label: 'Harbour', icon: '🏠', tooltip: 'Your home base — see if everything is running, start or stop the service, and view recent tasks.' },
   { id: 'setup', label: 'Setup', icon: '⚙️', tooltip: 'First time? This wizard walks you through getting OpenClaw ready. No terminal needed.' },
   { id: 'dispatch', label: 'Dispatch', icon: '🔱', tooltip: 'Send a task to the emissary. Type what you want done in plain English.' },
   { id: 'fishtank', label: 'Fishtank', icon: '🐠', tooltip: 'Peer into the depths! Watch the emissary swim around and see what he is up to.' },

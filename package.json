@@ -1,7 +1,7 @@
 {
   "name": "openclaw-harbor",
   "version": "1.0.0",
-  "description": "OpenClaw Harbor - Desktop companion for OpenClaw",
+  "description": "OpenClaw Harbour - Desktop companion for OpenClaw",
   "main": "./out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
@@ -16,7 +16,7 @@
   },
   "build": {
     "appId": "com.openclaw.harbor",
-    "productName": "OpenClaw Harbor",
+    "productName": "OpenClaw Harbour",
     "directories": {
       "output": "release"
     },

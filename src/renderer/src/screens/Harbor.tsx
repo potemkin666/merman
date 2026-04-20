@@ -66,7 +66,7 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
   return (
     <div style={{ padding: 32, maxWidth: 900, margin: '0 auto' }}>
       <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--color-primary)', marginBottom: 8 }}>
-        The Harbor
+        The Harbour
       </h1>
       <p style={{ color: 'var(--color-text-muted)', marginBottom: 24, fontSize: 14 }}>
         {statusCopy}

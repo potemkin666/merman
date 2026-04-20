@@ -7,7 +7,7 @@ interface WelcomeOverlayProps {
 const steps = [
   {
     emoji: '🔱',
-    title: 'Welcome to OpenClaw Harbor',
+    title: 'Welcome to OpenClaw Harbour',
     body: `This app helps you control OpenClaw — an AI agent that can do tasks on your computer.
 
 Think of it like having a very capable assistant. You tell it what to do, it goes and does it, then comes back with results.
@@ -30,7 +30,7 @@ You write what you want. The emissary figures out how to do it.
     title: 'Here is how this works',
     body: `1. First, run the Setup Wizard — it checks your computer is ready
 2. Point the app at your OpenClaw folder
-3. Hit "Summon" on the Harbor to start the service
+3. Hit "Summon" on the Harbour to start the service
 4. Go to Dispatch and type what you want done
 5. The emissary dives in and brings back results
 
@@ -39,7 +39,7 @@ That is it. No command line needed.`,
   {
     emoji: '🏠',
     title: 'Quick tour of the sidebar',
-    body: `🏠 Harbor — Your home base. See status, start/stop the service.
+    body: `🏠 Harbour — Your home base. See status, start/stop the service.
 ⚙️ Setup — Guided walkthrough to get everything ready.
 🔱 Dispatch — Send tasks to the emissary.
 🐠 Fishtank — Watch the emissary work (it is fun).

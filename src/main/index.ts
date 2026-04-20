@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import { join } from 'path'
 import type { ChildProcess } from 'child_process'
 import { IPC_CHANNELS } from '../shared/ipc'
-import { checkEnvironment } from './services/envChecker'
+import { checkEnvironment, detectOpenClawPath } from './services/envChecker'
 import { runCommand, killProcess } from './services/processRunner'
 import { getConfig, setConfig } from './services/configService'
 import { getLogs, addLog } from './services/logService'
@@ -64,6 +64,10 @@ ipcMain.handle(IPC_CHANNELS.CHECK_ENV, async () => {
   const results = await checkEnvironment()
   addLog('info', `Environment check completed: ${results.filter(r => r.ok).length}/${results.length} OK`)
   return results
+})
+
+ipcMain.handle(IPC_CHANNELS.DETECT_PATH, () => {
+  return detectOpenClawPath()
 })
 
 ipcMain.handle(IPC_CHANNELS.GET_CONFIG, () => getConfig())

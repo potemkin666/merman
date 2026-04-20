@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useIpc } from '../hooks/useIpc'
 import { Tooltip } from '../components/Tooltip'
 import { HelpHint } from '../components/Tooltip'
@@ -51,6 +51,22 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
   }
 
   const allPrereqsOk = envResults.length > 0 && envResults.every((r) => r.ok)
+
+  // Auto-run prereq checks when entering step 1
+  useEffect(() => {
+    if (step === 1 && envResults.length === 0 && !checking) {
+      checkPrereqs()
+    }
+  }, [step])
+
+  // Auto-detect OpenClaw path when entering step 2
+  useEffect(() => {
+    if (step === 2 && !path) {
+      invoke<string>(IPC_CHANNELS.DETECT_PATH).then((detected) => {
+        if (detected) setPath(detected)
+      })
+    }
+  }, [step])
 
   const runInstall = async () => {
     setInstalling(true)
@@ -118,7 +134,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
         {step === 0 && (
           <div>
             <div style={{ fontSize: 40, marginBottom: 16 }}>🔱</div>
-            <h2 style={{ fontSize: 20, marginBottom: 12 }}>Welcome to OpenClaw Harbor</h2>
+            <h2 style={{ fontSize: 20, marginBottom: 12 }}>Welcome to OpenClaw Harbour</h2>
             <p style={{ color: 'var(--color-text-muted)', fontSize: 14, lineHeight: 1.8 }}>
               This wizard will prepare your computer for OpenClaw in just a few steps.
             </p>
@@ -333,7 +349,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
               You are all set! Here is what to do next:
             </p>
             <ol style={{ paddingLeft: 20, fontSize: 14, color: 'var(--color-text-muted)', lineHeight: 2.2, marginTop: 12 }}>
-              <li>Go to <strong style={{ color: 'var(--color-primary)' }}>The Harbor</strong> and click <strong style={{ color: 'var(--color-primary)' }}>Summon</strong> to start the service</li>
+              <li>Go to <strong style={{ color: 'var(--color-primary)' }}>The Harbour</strong> and click <strong style={{ color: 'var(--color-primary)' }}>Summon</strong> to start the service</li>
               <li>Go to <strong style={{ color: 'var(--color-primary)' }}>Dispatch</strong> and type your first task</li>
               <li>Check the <strong style={{ color: 'var(--color-primary)' }}>Fishtank</strong> to watch the emissary work!</li>
             </ol>

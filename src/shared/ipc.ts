@@ -1,5 +1,6 @@
 export const IPC_CHANNELS = {
   CHECK_ENV: 'check-env',
+  DETECT_PATH: 'detect-path',
   GET_CONFIG: 'get-config',
   SET_CONFIG: 'set-config',
   RUN_SETUP: 'run-setup',

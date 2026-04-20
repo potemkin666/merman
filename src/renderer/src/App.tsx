@@ -39,8 +39,8 @@ export default function App() {
         background: 'var(--color-bg)',
       }}>
         <div style={{ fontSize: 56, animation: 'emissaryFloat 3s ease-in-out infinite' }}>🔱</div>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: 15 }}>Summoning the harbor...</p>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: 12, opacity: 0.6 }}>This should only take a moment</p>
+        <p style={{ color: 'var(--color-primary)', fontSize: 18, fontWeight: 600 }}>OpenClaw Harbour</p>
+        <p style={{ color: 'var(--color-text-muted)', fontSize: 14 }}>Your merman emissary awaits.</p>
       </div>
     )
   }
