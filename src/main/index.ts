@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, shell, dialog } from 'electron'
 import { join } from 'path'
 import type { ChildProcess } from 'child_process'
 import { IPC_CHANNELS } from '../shared/ipc'
@@ -11,6 +11,7 @@ import { getLogs, addLog } from './services/logService'
 
 let mainWindow: BrowserWindow | null = null
 let serviceProcess: ChildProcess | null = null
+let dispatchProcess: ChildProcess | null = null
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -58,6 +59,10 @@ app.on('before-quit', () => {
     killProcess(serviceProcess)
     serviceProcess = null
   }
+  if (dispatchProcess) {
+    killProcess(dispatchProcess)
+    dispatchProcess = null
+  }
   killTerminal()
 })
 
@@ -73,6 +78,16 @@ ipcMain.handle(IPC_CHANNELS.DETECT_PATH, () => {
   return detectOpenClawPath()
 })
 
+ipcMain.handle(IPC_CHANNELS.BROWSE_FOLDER, async () => {
+  if (!mainWindow) return ''
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory'],
+    title: 'Select Folder',
+  })
+  if (result.canceled || result.filePaths.length === 0) return ''
+  return result.filePaths[0]
+})
+
 ipcMain.handle(IPC_CHANNELS.GET_CONFIG, () => getConfig())
 
 ipcMain.handle(IPC_CHANNELS.SET_CONFIG, (_event, updates) => setConfig(updates))
@@ -81,6 +96,15 @@ ipcMain.handle(IPC_CHANNELS.GET_API_KEY, () => getApiKey())
 
 ipcMain.handle(IPC_CHANNELS.SET_API_KEY, (_event, key: string) => {
   setApiKey(key)
+  return { ok: true }
+})
+
+ipcMain.handle(IPC_CHANNELS.GET_WELCOME_SEEN, () => {
+  return getConfig().welcomeSeen === true
+})
+
+ipcMain.handle(IPC_CHANNELS.SET_WELCOME_SEEN, () => {
+  setConfig({ welcomeSeen: true })
   return { ok: true }
 })
 
@@ -179,21 +203,42 @@ ipcMain.handle(IPC_CHANNELS.DISPATCH_TASK, async (_event, { prompt, mode, openCl
   try {
     addLog('info', `Dispatching task: ${prompt.substring(0, 60)}...`)
     mainWindow?.webContents.send(IPC_CHANNELS.ON_STATUS_CHANGE, 'running')
-    const output = await runCommand(
+    const proc = runCommand(
       'node',
       ['index.js', '--prompt', JSON.stringify(prompt), '--mode', mode],
       resolvedPath,
       mainWindow
     )
+    dispatchProcess = proc
+    const output = await proc
+    dispatchProcess = null
     addLog('info', 'Task completed')
     mainWindow?.webContents.send(IPC_CHANNELS.ON_STATUS_CHANGE, 'idle')
     return { ok: true, output }
   } catch (err) {
+    dispatchProcess = null
     const msg = err instanceof Error ? err.message : 'Unknown error'
+    // Distinguish user-initiated cancellation from real errors
+    if (msg.includes('SIGTERM') || msg.includes('killed')) {
+      addLog('info', 'Task was cancelled by user')
+      mainWindow?.webContents.send(IPC_CHANNELS.ON_STATUS_CHANGE, 'idle')
+      return { ok: false, error: 'Task cancelled.', explanation: { what: 'You cancelled the task.', cause: 'The task was stopped at your request.', action: 'Dispatch a new task when you are ready.', retryable: true } }
+    }
     addLog('error', `Task failed: ${msg}`)
     mainWindow?.webContents.send(IPC_CHANNELS.ON_STATUS_CHANGE, 'error')
     return { ok: false, error: msg, explanation: translateError(msg, 'dispatch') }
   }
+})
+
+ipcMain.handle(IPC_CHANNELS.CANCEL_TASK, async () => {
+  if (dispatchProcess) {
+    killProcess(dispatchProcess)
+    dispatchProcess = null
+    addLog('info', 'Task cancelled by user')
+    mainWindow?.webContents.send(IPC_CHANNELS.ON_STATUS_CHANGE, 'idle')
+    return { ok: true }
+  }
+  return { ok: false, error: 'No active task to cancel.' }
 })
 
 // --- Terminal IPC Handlers ---

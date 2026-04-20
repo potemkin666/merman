@@ -9,6 +9,7 @@ const defaults: AppConfig = {
   model: 'gpt-4o',
   provider: 'openai',
   apiKey: '',
+  welcomeSeen: false,
   presets: [
     { id: '1', name: 'Quick Chat', mode: 'default', description: 'Simple conversational task' },
     { id: '2', name: 'Starter Mode', mode: 'starter', description: 'Guided, safe defaults for beginners' },
