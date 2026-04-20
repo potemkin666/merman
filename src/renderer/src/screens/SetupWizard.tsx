@@ -12,28 +12,6 @@ interface SetupWizardProps {
 
 const STEPS = ['Welcome', 'Prerequisites', 'Configuration', 'Install', 'Done']
 
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  background: 'var(--color-surface)',
-  border: '1px solid var(--color-border)',
-  borderRadius: 'var(--radius-md)',
-  padding: '10px 14px',
-  color: 'var(--color-text)',
-  fontSize: 14,
-  outline: 'none',
-}
-
-const btnPrimary: React.CSSProperties = {
-  padding: '10px 24px',
-  background: 'var(--color-primary)',
-  color: '#0a0f1e',
-  borderRadius: 'var(--radius-md)',
-  fontWeight: 600,
-  fontSize: 14,
-  cursor: 'pointer',
-  boxShadow: 'var(--glow-primary)',
-}
-
 export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
   const { invoke } = useIpc()
   const [step, setStep] = useState(0)
@@ -159,17 +137,17 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
   const progress = ((step + 1) / STEPS.length) * 100
 
   return (
-    <div style={{ padding: 32, maxWidth: 640, margin: '0 auto' }}>
-      <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--color-primary)', marginBottom: 8 }}>
+    <div className="setup-wizard">
+      <h1 className="screen-title">
         Setup Wizard
       </h1>
-      <p style={{ color: 'var(--color-text-muted)', marginBottom: 8, fontSize: 14 }}>
+      <p className="screen-subtitle" style={{ marginBottom: 8 }}>
         Follow these steps and you will be up and running in no time. No terminal needed!
       </p>
 
       {/* Progress bar */}
-      <div style={{ marginBottom: 32 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+      <div className="setup-wizard__progress">
+        <div className="setup-wizard__steps">
           {STEPS.map((s, i) => (
             <Tooltip key={s} text={
               i === 0 ? 'A quick introduction to what this wizard does.' :
@@ -178,51 +156,38 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
               i === 3 ? 'We install the packages OpenClaw needs. You just click one button.' :
               'All done! You are ready to use the app.'
             }>
-              <span style={{
-                fontSize: 11,
+              <span className="setup-wizard__step-label" style={{
                 fontWeight: i === step ? 600 : 400,
                 color: i <= step ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                cursor: 'help',
               }}>
                 {s}
               </span>
             </Tooltip>
           ))}
         </div>
-        <div style={{ height: 4, background: 'var(--color-surface)', borderRadius: 2 }}
+        <div className="setup-wizard__bar"
           role="progressbar"
           aria-valuenow={step}
           aria-valuemin={0}
           aria-valuemax={STEPS.length - 1}
           aria-label={`Setup progress: step ${step + 1} of ${STEPS.length}`}
         >
-          <div style={{
-            height: '100%',
+          <div className="setup-wizard__bar-fill" style={{
             width: `${progress}%`,
-            background: 'var(--color-primary)',
-            borderRadius: 2,
-            transition: 'width 0.4s',
-            boxShadow: 'var(--glow-primary)',
           }} />
         </div>
       </div>
 
       {/* Step Content */}
-      <div style={{
-        background: 'var(--color-panel)',
-        border: '1px solid var(--color-border)',
-        borderRadius: 'var(--radius-lg)',
-        padding: 32,
-        minHeight: 260,
-      }}>
+      <div className="setup-wizard__content">
         {step === 0 && (
           <div>
             <div style={{ fontSize: 40, marginBottom: 16 }}>🔱</div>
-            <h2 style={{ fontSize: 20, marginBottom: 12 }}>Welcome to OpenClaw Harbour</h2>
+            <h2 className="setup-wizard__step-heading--no-flex">Welcome to OpenClaw Harbour</h2>
             <p style={{ color: 'var(--color-text-muted)', fontSize: 14, lineHeight: 1.8 }}>
               This wizard will prepare your computer for OpenClaw in just a few steps.
             </p>
-            <div style={{ marginTop: 16, padding: '12px 16px', background: 'rgba(0,200,212,0.05)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(0,200,212,0.1)' }}>
+            <div className="setup-wizard__info-box">
               <p style={{ fontSize: 13, color: 'var(--color-text)', lineHeight: 1.7, marginBottom: 8 }}>
                 <strong>Here is what we will do:</strong>
               </p>
@@ -240,7 +205,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
 
         {step === 1 && (
           <div>
-            <h2 style={{ fontSize: 20, marginBottom: 16, display: 'flex', alignItems: 'center' }}>
+            <h2 className="setup-wizard__step-heading">
               Checking Prerequisites
               <HelpHint text="Prerequisites are tools your computer needs to have installed before OpenClaw can work. Think of them like ingredients for a recipe — you need them before you can cook." />
             </h2>
@@ -249,20 +214,14 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
               If anything is missing, we will tell you exactly how to fix it.
             </p>
             <Tooltip text="Click this to scan your system. It checks for Node.js (runs JavaScript), npm (installs packages), and git (version control). Takes about 2 seconds.">
-              <button onClick={checkPrereqs} disabled={checking} aria-label={checking ? 'Checking prerequisites' : 'Run prerequisite checks'} style={btnPrimary}>
+              <button onClick={checkPrereqs} disabled={checking} aria-label={checking ? 'Checking prerequisites' : 'Run prerequisite checks'} className="btn btn--primary">
                 {checking ? '⏳ Checking...' : '🔍 Run Checks'}
               </button>
             </Tooltip>
             {envResults.length > 0 && (
-              <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div className="setup-wizard__env-results">
                 {envResults.map((r) => (
-                  <div key={r.name} style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: 8,
-                    padding: '10px 12px',
-                    background: 'var(--color-surface)',
-                    borderRadius: 'var(--radius-md)',
+                  <div key={r.name} className="setup-wizard__env-result" style={{
                     border: r.ok ? '1px solid transparent' : '1px solid rgba(232,93,93,0.2)',
                   }}>
                     <span style={{ flexShrink: 0 }}>{r.ok ? '✅' : '❌'}</span>
@@ -285,30 +244,13 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
                   </div>
                 ))}
                 {!allPrereqsOk && (
-                  <div style={{
-                    marginTop: 8,
-                    padding: '10px 14px',
-                    background: 'rgba(240,165,0,0.08)',
-                    border: '1px solid rgba(240,165,0,0.2)',
-                    borderRadius: 'var(--radius-md)',
-                    fontSize: 12,
-                    color: 'var(--color-warning)',
-                    lineHeight: 1.6,
-                  }}>
+                  <div className="setup-wizard__status-banner--warning">
                     <strong>Some checks did not pass.</strong> Install the missing tools using the instructions above,
                     then click &quot;Run Checks&quot; again. You can still continue, but the install step might fail.
                   </div>
                 )}
                 {allPrereqsOk && (
-                  <div style={{
-                    marginTop: 8,
-                    padding: '10px 14px',
-                    background: 'rgba(45,212,160,0.08)',
-                    border: '1px solid rgba(45,212,160,0.2)',
-                    borderRadius: 'var(--radius-md)',
-                    fontSize: 12,
-                    color: 'var(--color-success)',
-                  }}>
+                  <div className="setup-wizard__status-banner--success">
                     🎉 Everything looks good! Click &quot;Next&quot; to continue.
                   </div>
                 )}
@@ -319,11 +261,11 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
 
         {step === 2 && (
           <div>
-            <h2 style={{ fontSize: 20, marginBottom: 16, display: 'flex', alignItems: 'center' }}>
+            <h2 className="setup-wizard__step-heading">
               Configure Paths
               <HelpHint text="We need to know where on your computer you downloaded or cloned OpenClaw. This is just a folder path, like the address of a house." />
             </h2>
-            <label style={{ display: 'flex', alignItems: 'center', marginBottom: 6, fontSize: 13, color: 'var(--color-text-muted)' }}>
+            <label className="label">
               OpenClaw Directory Path
               <HelpHint text="This is the folder where OpenClaw lives. If you cloned it from GitHub, it is wherever you ran 'git clone'. It should have a file called package.json inside." />
             </label>
@@ -333,7 +275,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
               onChange={(e) => setPath(e.target.value)}
               placeholder="/path/to/openclaw"
               aria-label="OpenClaw directory path"
-              style={inputStyle}
+              className="input"
             />
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
               <Tooltip text="Open a folder picker to select the OpenClaw directory. Easier than typing!">
@@ -343,22 +285,13 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
                     if (selected) setPath(selected)
                   }}
                   aria-label="Browse for OpenClaw directory"
-                  style={{
-                    padding: '6px 14px',
-                    background: 'rgba(0,200,212,0.1)',
-                    color: 'var(--color-primary)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: 'var(--radius-sm)',
-                    fontSize: 12,
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                  }}
+                  className="deep-config__btn-sm"
                 >
                   📁 Browse…
                 </button>
               </Tooltip>
             </div>
-            <div style={{ marginTop: 12, padding: '12px 16px', background: 'rgba(0,200,212,0.05)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(0,200,212,0.1)' }}>
+            <div className="setup-wizard__info-box" style={{ marginTop: 12 }}>
               <p style={{ fontSize: 12, color: 'var(--color-text-muted)', lineHeight: 1.7 }}>
                 <strong style={{ color: 'var(--color-text)' }}>💡 How to find this path:</strong><br />
                 <strong>Windows:</strong> Open File Explorer, navigate to the OpenClaw folder, click the address bar — copy that text.<br />
@@ -372,29 +305,12 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
               </p>
             )}
             {pathError && (
-              <div style={{
-                marginTop: 12,
-                padding: '10px 14px',
-                background: 'rgba(232,93,93,0.08)',
-                border: '1px solid rgba(232,93,93,0.2)',
-                borderRadius: 'var(--radius-md)',
-                fontSize: 12,
-                color: 'var(--color-error)',
-                lineHeight: 1.6,
-              }}>
+              <div className="setup-wizard__status-banner--error">
                 ❌ {pathError}
               </div>
             )}
             {pathValid && !pathError && (
-              <div style={{
-                marginTop: 12,
-                padding: '10px 14px',
-                background: 'rgba(45,212,160,0.08)',
-                border: '1px solid rgba(45,212,160,0.2)',
-                borderRadius: 'var(--radius-md)',
-                fontSize: 12,
-                color: 'var(--color-success)',
-              }}>
+              <div className="setup-wizard__status-banner--success" style={{ marginTop: 12 }}>
                 ✅ Path looks good!
               </div>
             )}
@@ -403,7 +319,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
 
         {step === 3 && (
           <div>
-            <h2 style={{ fontSize: 20, marginBottom: 16, display: 'flex', alignItems: 'center' }}>
+            <h2 className="setup-wizard__step-heading">
               Install Dependencies
               <HelpHint text="OpenClaw needs some extra packages to work. This step downloads and installs them automatically. It is like installing an app — you just click a button and wait." />
             </h2>
@@ -413,8 +329,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
             </p>
             {!installResult && !installing && (
               <Tooltip text={!path ? 'Go back and set the OpenClaw path first.' : 'Click to download and install all required packages. This runs npm install inside your OpenClaw folder.'}>
-                <button onClick={runInstall} disabled={installing || !path} aria-label={installing ? 'Installing dependencies' : 'Install dependencies now'} style={{
-                  ...btnPrimary,
+                <button onClick={runInstall} disabled={installing || !path} aria-label={installing ? 'Installing dependencies' : 'Install dependencies now'} className="btn btn--primary" style={{
                   opacity: installing || !path ? 0.5 : 1,
                   cursor: installing || !path ? 'not-allowed' : 'pointer',
                 }}>
@@ -436,18 +351,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
                   role="log"
                   aria-label="Install output"
                   aria-live="polite"
-                  style={{
-                    background: 'var(--color-surface)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: 'var(--radius-md)',
-                    padding: 10,
-                    maxHeight: 160,
-                    overflowY: 'auto',
-                    fontFamily: 'monospace',
-                    fontSize: 11,
-                    lineHeight: 1.5,
-                    color: 'var(--color-text-muted)',
-                  }}
+                  className="setup-wizard__install-log"
                 >
                   {installLogs.length === 0 ? (
                     <span style={{ opacity: 0.5 }}>Waiting for output...</span>
@@ -465,24 +369,12 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
             )}
 
             {installResult?.ok && (
-              <div style={{
-                padding: '12px 16px',
-                background: 'rgba(45,212,160,0.08)',
-                border: '1px solid rgba(45,212,160,0.2)',
-                borderRadius: 'var(--radius-md)',
-                color: 'var(--color-success)',
-                fontSize: 14,
-              }}>
+              <div className="setup-wizard__install-result--ok">
                 ✅ Installation complete! Moving to the final step...
               </div>
             )}
             {installResult && !installResult.ok && (
-              <div style={{
-                padding: '16px',
-                background: 'rgba(232,93,93,0.06)',
-                border: '1px solid rgba(232,93,93,0.2)',
-                borderRadius: 'var(--radius-md)',
-              }}>
+              <div className="setup-wizard__install-result--fail">
                 <p style={{ color: 'var(--color-error)', fontWeight: 600, fontSize: 14, marginBottom: 8 }}>
                   ❌ Installation failed
                 </p>
@@ -503,9 +395,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
                 )}
                 {installResult.explanation?.retryable !== false && (
                   <Tooltip text="Try the installation again. Sometimes things fail due to temporary network issues.">
-                    <button onClick={() => { setInstallResult(null); runInstall() }} aria-label="Retry installation" style={{
-                      ...btnPrimary,
-                      background: 'var(--color-warning)',
+                    <button onClick={() => { setInstallResult(null); runInstall() }} aria-label="Retry installation" className="btn btn--warning" style={{
                       fontSize: 13,
                       padding: '8px 18px',
                     }}>
@@ -521,7 +411,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
         {step === 4 && (
           <div>
             <div style={{ fontSize: 40, marginBottom: 16 }}>🎉</div>
-            <h2 style={{ fontSize: 20, marginBottom: 12 }}>Setup Complete!</h2>
+            <h2 className="setup-wizard__step-heading--no-flex">Setup Complete!</h2>
             <p style={{ color: 'var(--color-text-muted)', fontSize: 14, lineHeight: 1.8 }}>
               You are all set! Here is what to do next:
             </p>
@@ -538,20 +428,15 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
       </div>
 
       {/* Navigation */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 20 }}>
+      <div className="setup-wizard__nav">
         <Tooltip text={step === 0 ? 'You are already at the first step.' : 'Go back to the previous step.'}>
           <button
             onClick={() => setStep((s) => Math.max(0, s - 1))}
             disabled={step === 0}
             aria-label="Go to previous step"
+            className="setup-wizard__back-btn"
             style={{
-              padding: '10px 24px',
-              background: 'transparent',
               color: step === 0 ? 'var(--color-text-muted)' : 'var(--color-text)',
-              border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-md)',
-              fontWeight: 500,
-              fontSize: 14,
               cursor: step === 0 ? 'not-allowed' : 'pointer',
             }}
           >
@@ -564,7 +449,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
               onClick={handleNext}
               disabled={validatingPath}
               aria-label={validatingPath ? 'Validating path' : 'Go to next step'}
-              style={btnPrimary}
+              className="btn btn--primary"
             >
               {validatingPath ? '⏳ Checking...' : 'Next →'}
             </button>

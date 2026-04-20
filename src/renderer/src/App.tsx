@@ -51,18 +51,10 @@ function AppContent() {
       <div
         role="status"
         aria-label="Loading OpenClaw Harbour"
-        style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh',
-        flexDirection: 'column',
-        gap: 16,
-        background: 'var(--color-bg)',
-      }}>
-        <div style={{ fontSize: 56, animation: 'emissaryFloat 3s ease-in-out infinite' }} aria-hidden="true">🔱</div>
-        <p style={{ color: 'var(--color-primary)', fontSize: 18, fontWeight: 600 }}>OpenClaw Harbour</p>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: 14 }}>Your emissary awaits.</p>
+        className="loading-screen">
+        <div className="loading-screen__icon" aria-hidden="true">🔱</div>
+        <p className="loading-screen__title">OpenClaw Harbour</p>
+        <p className="loading-screen__subtitle">Your emissary awaits.</p>
       </div>
     )
   }
@@ -81,14 +73,10 @@ function AppContent() {
   }
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+    <div className="app-layout">
       {showWelcome && <WelcomeOverlay onDismiss={dismissWelcome} />}
       <NavSidebar active={page} onNavigate={setPage} />
-      <main style={{
-        flex: 1,
-        overflowY: 'auto',
-        background: 'var(--color-bg)',
-      }}>
+      <main className="app-main">
         {renderScreen()}
       </main>
     </div>

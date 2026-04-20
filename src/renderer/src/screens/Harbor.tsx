@@ -108,11 +108,11 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
       {/* Environment Readiness */}
       {envChecked && (
         <div className="card" style={{ marginTop: 20 }}>
-          <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 12, display: 'flex', alignItems: 'center' }}>
+          <h3 className="harbor__env-title">
             Environment Health
             <HelpHint text="These checks tell you if your computer has everything it needs to run OpenClaw. Green = good. Red = needs attention. Click Setup in the sidebar to fix issues." />
           </h3>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }} role="list" aria-label="Environment check results">
+          <div className="harbor__env-list" role="list" aria-label="Environment check results">
             {envResults.map((r) => (
               <Tooltip key={r.name} text={r.ok ? `${r.name} is installed and working${r.version ? ` (v${r.version})` : ''}.` : (r.message || `${r.name} needs attention.`)} position="bottom">
                 <span role="listitem" className={r.ok ? 'env-pill env-pill--ok' : 'env-pill env-pill--fail'}>
@@ -168,7 +168,7 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
         </Tooltip>
       </div>
 
-      <h2 style={{ fontSize: 16, fontWeight: 600, color: 'var(--color-text)', marginBottom: 16, display: 'flex', alignItems: 'center' }}>
+      <h2 className="harbor__section-title">
         Messages in Bottles
         <HelpHint text={`These are tasks you have sent to ${name}. Each bottle holds a past dispatch. Click one to uncork it and read the results. Cracked bottles mean something went wrong.`} />
       </h2>

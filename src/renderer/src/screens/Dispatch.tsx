@@ -157,8 +157,8 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
           className="input input--textarea"
         />
 
-        <div style={{ display: 'flex', gap: 12, marginTop: 16, alignItems: 'center' }}>
-          <div style={{ flex: 1 }}>
+        <div className="dispatch__controls">
+          <div className="dispatch__mode-wrapper">
             <label className="label label--sm" style={{ marginBottom: 6 }}>
               Mode
               <HelpHint text="Modes change how the agent approaches your task. 'Default' works for most things. Pick 'Code' for programming tasks, 'Research' for investigation, etc. Not sure? Just leave it on Default." />
@@ -181,17 +181,12 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
               onClick={handleDispatch}
               disabled={dispatching || !prompt.trim()}
               aria-label={dispatching ? 'Dispatching task' : `Dispatch task to ${name}`}
+              className="dispatch__btn"
               style={{
-                marginTop: 20,
-                padding: '10px 28px',
                 background: dispatching || !prompt.trim() ? 'rgba(0,200,212,0.2)' : 'var(--color-primary)',
                 color: dispatching || !prompt.trim() ? 'var(--color-text-muted)' : '#0a0f1e',
-                borderRadius: 'var(--radius-md)',
-                fontWeight: 700,
-                fontSize: 14,
                 cursor: dispatching || !prompt.trim() ? 'not-allowed' : 'pointer',
                 boxShadow: dispatching || !prompt.trim() ? 'none' : 'var(--glow-primary)',
-                whiteSpace: 'nowrap',
               }}
             >
               {dispatching ? `⏳ Dispatching... (${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')})` : `🔱 Dispatch ${name}`}
@@ -203,17 +198,9 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
                 onClick={handleCancel}
                 disabled={cancelling}
                 aria-label="Cancel the running task"
+                className="dispatch__cancel-btn"
                 style={{
-                  marginTop: 20,
-                  marginLeft: 8,
-                  padding: '10px 20px',
-                  background: 'var(--color-error)',
-                  color: '#fff',
-                  borderRadius: 'var(--radius-md)',
-                  fontWeight: 600,
-                  fontSize: 14,
                   cursor: cancelling ? 'wait' : 'pointer',
-                  whiteSpace: 'nowrap',
                   opacity: cancelling ? 0.6 : 1,
                 }}
               >
@@ -226,13 +213,8 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
 
       {/* Result or error */}
       {result && result.ok && (
-        <div style={{
-          background: 'var(--color-panel)',
-          border: '1px solid var(--color-border)',
-          borderRadius: 'var(--radius-lg)',
-          padding: 20,
-        }}>
-          <h3 style={{ fontSize: 13, fontWeight: 600, marginBottom: 12, color: 'var(--color-success)' }}>
+        <div className="dispatch__result">
+          <h3 className="dispatch__result-title" style={{ color: 'var(--color-success)' }}>
             ✅ Returned to shore
           </h3>
           <pre className="output-pre">
@@ -243,11 +225,11 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
 
       {result && !result.ok && (
         <div className="card" style={{ borderColor: 'rgba(232,93,93,0.3)', padding: 20 }}>
-          <h3 style={{ fontSize: 13, fontWeight: 600, marginBottom: 12, color: 'var(--color-error)' }}>
+          <h3 className="dispatch__result-title" style={{ color: 'var(--color-error)' }}>
             ❌ {name} returned empty-handed
           </h3>
           {result.explanation ? (
-            <div style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 12 }}>
+            <div className="dispatch__error-detail">
               <p style={{ color: 'var(--color-text)', marginBottom: 4 }}>
                 <strong>What happened:</strong> {result.explanation.what}
               </p>
