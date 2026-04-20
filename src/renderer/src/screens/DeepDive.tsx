@@ -111,14 +111,14 @@ export const DeepDive: React.FC<DeepDiveProps> = ({ config }) => {
   useIpcListener(IPC_CHANNELS.TERMINAL_OUTPUT, (...args: unknown[]) => {
     const data = args[0] as string
     termRef.current?.write(data)
-  }, [])
+  })
 
   // Terminal exit listener
   useIpcListener(IPC_CHANNELS.TERMINAL_EXIT, () => {
     setIsRunning(false)
     setNarration(`The deep dive has ended. ${name} has returned to shore.`)
     termRef.current?.write('\r\n\x1b[36m[Session ended]\x1b[0m\r\n')
-  }, [])
+  })
 
   // Initialize xterm
   useEffect(() => {

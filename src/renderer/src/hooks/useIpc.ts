@@ -47,8 +47,7 @@ export function useIpc() {
  */
 export function useIpcListener(
   channel: IpcChannel,
-  callback: (...args: unknown[]) => void,
-  _deps: unknown[] = []
+  callback: (...args: unknown[]) => void
 ) {
   const { on } = useIpc()
   const callbackRef = useRef(callback)

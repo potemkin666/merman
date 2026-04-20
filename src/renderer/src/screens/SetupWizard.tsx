@@ -36,7 +36,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
     if (entry?.message) {
       setInstallLogs((prev) => [...prev.slice(-MAX_INSTALL_LOG_LINES), entry.message.trim()])
     }
-  }, [installing])
+  })
 
   // Elapsed time counter during install
   useEffect(() => {
