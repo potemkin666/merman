@@ -29,7 +29,7 @@ export const LogPanel: React.FC<LogPanelProps> = ({
   const filtered = filter === 'all' ? logs : logs.filter((l) => l.level === filter)
 
   return (
-    <div style={{
+    <div role="log" aria-label="Activity log" aria-live="polite" style={{
       background: 'var(--color-surface)',
       border: '1px solid var(--color-border)',
       borderRadius: 'var(--radius-md)',

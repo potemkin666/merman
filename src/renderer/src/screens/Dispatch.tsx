@@ -116,6 +116,7 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="Describe the task for the emissary... For example: &quot;Write me a short email thanking my team for their hard work this week&quot;"
           rows={6}
+          aria-label="Task instruction for the emissary"
           style={{
             width: '100%',
             background: 'var(--color-surface)',
@@ -139,6 +140,7 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
             <select
               value={mode}
               onChange={(e) => setMode(e.target.value)}
+              aria-label="Agent mode"
               style={{
                 width: '100%',
                 background: 'var(--color-surface)',
@@ -160,6 +162,7 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
             <button
               onClick={handleDispatch}
               disabled={dispatching || !prompt.trim()}
+              aria-label={dispatching ? 'Dispatching task' : 'Dispatch task to emissary'}
               style={{
                 marginTop: 20,
                 padding: '10px 28px',
@@ -250,6 +253,7 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
               <button
                 onClick={handleDispatch}
                 disabled={dispatching}
+                aria-label="Retry the failed task"
                 style={{
                   marginTop: 12,
                   padding: '8px 18px',

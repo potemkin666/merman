@@ -115,7 +115,13 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
             </Tooltip>
           ))}
         </div>
-        <div style={{ height: 4, background: 'var(--color-surface)', borderRadius: 2 }}>
+        <div style={{ height: 4, background: 'var(--color-surface)', borderRadius: 2 }}
+          role="progressbar"
+          aria-valuenow={step + 1}
+          aria-valuemin={1}
+          aria-valuemax={STEPS.length}
+          aria-label={`Setup progress: step ${step + 1} of ${STEPS.length}`}
+        >
           <div style={{
             height: '100%',
             width: `${progress}%`,
@@ -169,7 +175,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
               If anything is missing, we will tell you exactly how to fix it.
             </p>
             <Tooltip text="Click this to scan your system. It checks for Node.js (runs JavaScript), npm (installs packages), and git (version control). Takes about 2 seconds.">
-              <button onClick={checkPrereqs} disabled={checking} style={btnPrimary}>
+              <button onClick={checkPrereqs} disabled={checking} aria-label={checking ? 'Checking prerequisites' : 'Run prerequisite checks'} style={btnPrimary}>
                 {checking ? '⏳ Checking...' : '🔍 Run Checks'}
               </button>
             </Tooltip>
@@ -252,6 +258,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
               value={path}
               onChange={(e) => setPath(e.target.value)}
               placeholder="/path/to/openclaw"
+              aria-label="OpenClaw directory path"
               style={inputStyle}
             />
             <div style={{ marginTop: 12, padding: '12px 16px', background: 'rgba(0,200,212,0.05)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(0,200,212,0.1)' }}>
@@ -282,7 +289,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
             </p>
             {!installResult && (
               <Tooltip text={!path ? 'Go back and set the OpenClaw path first.' : 'Click to download and install all required packages. This runs npm install inside your OpenClaw folder.'}>
-                <button onClick={runInstall} disabled={installing || !path} style={{
+                <button onClick={runInstall} disabled={installing || !path} aria-label={installing ? 'Installing dependencies' : 'Install dependencies now'} style={{
                   ...btnPrimary,
                   opacity: installing || !path ? 0.5 : 1,
                   cursor: installing || !path ? 'not-allowed' : 'pointer',
@@ -330,7 +337,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
                 )}
                 {installResult.explanation?.retryable !== false && (
                   <Tooltip text="Try the installation again. Sometimes things fail due to temporary network issues.">
-                    <button onClick={() => { setInstallResult(null); runInstall() }} style={{
+                    <button onClick={() => { setInstallResult(null); runInstall() }} aria-label="Retry installation" style={{
                       ...btnPrimary,
                       background: 'var(--color-warning)',
                       fontSize: 13,
@@ -370,6 +377,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
           <button
             onClick={() => setStep((s) => Math.max(0, s - 1))}
             disabled={step === 0}
+            aria-label="Go to previous step"
             style={{
               padding: '10px 24px',
               background: 'transparent',
@@ -386,7 +394,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
         </Tooltip>
         {step < STEPS.length - 1 && (
           <Tooltip text="Continue to the next step.">
-            <button onClick={() => setStep((s) => s + 1)} style={btnPrimary}>
+            <button onClick={() => setStep((s) => s + 1)} aria-label="Go to next step" style={btnPrimary}>
               Next →
             </button>
           </Tooltip>

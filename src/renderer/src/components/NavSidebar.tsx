@@ -24,7 +24,7 @@ interface NavSidebarProps {
 
 export const NavSidebar: React.FC<NavSidebarProps> = ({ active, onNavigate }) => {
   return (
-    <nav style={{
+    <nav aria-label="Main navigation" style={{
       width: 80,
       minHeight: '100vh',
       background: 'rgba(10, 20, 38, 0.9)',
@@ -37,11 +37,13 @@ export const NavSidebar: React.FC<NavSidebarProps> = ({ active, onNavigate }) =>
       gap: 4,
       flexShrink: 0,
     }}>
-      <div style={{ marginBottom: 24, fontSize: 24 }}>🔱</div>
+      <div style={{ marginBottom: 24, fontSize: 24 }} aria-hidden="true">🔱</div>
       {NAV_ITEMS.map((item) => (
         <Tooltip key={item.id} text={item.tooltip} position="right" maxWidth={240}>
           <button
             onClick={() => onNavigate(item.id)}
+            aria-label={`Navigate to ${item.label}`}
+            aria-current={active === item.id ? 'page' : undefined}
             style={{
               width: 56,
               height: 56,
@@ -60,7 +62,7 @@ export const NavSidebar: React.FC<NavSidebarProps> = ({ active, onNavigate }) =>
               boxShadow: active === item.id ? 'var(--glow-primary)' : 'none',
             }}
           >
-            <span>{item.icon}</span>
+            <span aria-hidden="true">{item.icon}</span>
             <span style={{ fontSize: 9, fontWeight: 500 }}>{item.label}</span>
           </button>
         </Tooltip>

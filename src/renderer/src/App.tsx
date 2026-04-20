@@ -29,7 +29,10 @@ export default function App() {
 
   if (loading) {
     return (
-      <div style={{
+      <div
+        role="status"
+        aria-label="Loading OpenClaw Harbour"
+        style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -38,7 +41,7 @@ export default function App() {
         gap: 16,
         background: 'var(--color-bg)',
       }}>
-        <div style={{ fontSize: 56, animation: 'emissaryFloat 3s ease-in-out infinite' }}>🔱</div>
+        <div style={{ fontSize: 56, animation: 'emissaryFloat 3s ease-in-out infinite' }} aria-hidden="true">🔱</div>
         <p style={{ color: 'var(--color-primary)', fontSize: 18, fontWeight: 600 }}>OpenClaw Harbour</p>
         <p style={{ color: 'var(--color-text-muted)', fontSize: 14 }}>Your merman emissary awaits.</p>
       </div>

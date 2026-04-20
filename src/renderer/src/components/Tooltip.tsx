@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useId } from 'react'
 
 interface TooltipProps {
   text: string
@@ -17,6 +17,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
   const [coords, setCoords] = useState({ top: 0, left: 0 })
   const triggerRef = useRef<HTMLSpanElement>(null)
   const tipRef = useRef<HTMLDivElement>(null)
+  const tooltipId = useId()
 
   useEffect(() => {
     if (visible && triggerRef.current && tipRef.current) {
@@ -59,6 +60,9 @@ export const Tooltip: React.FC<TooltipProps> = ({
         ref={triggerRef}
         onMouseEnter={() => setVisible(true)}
         onMouseLeave={() => setVisible(false)}
+        onFocus={() => setVisible(true)}
+        onBlur={() => setVisible(false)}
+        aria-describedby={visible ? tooltipId : undefined}
         style={{ display: 'inline-flex' }}
       >
         {children}
@@ -66,6 +70,8 @@ export const Tooltip: React.FC<TooltipProps> = ({
       {visible && (
         <div
           ref={tipRef}
+          id={tooltipId}
+          role="tooltip"
           style={{
             position: 'fixed',
             top: coords.top,
@@ -99,6 +105,8 @@ export const HelpHint: React.FC<{ text: string; position?: TooltipProps['positio
 }) => (
   <Tooltip text={text} position={position}>
     <span
+      role="img"
+      aria-label="Help"
       style={{
         display: 'inline-flex',
         alignItems: 'center',

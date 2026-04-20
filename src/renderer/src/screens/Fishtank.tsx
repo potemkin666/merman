@@ -248,7 +248,10 @@ export const Fishtank: React.FC<FishtankProps> = ({ status }) => {
       </p>
 
       {/* The tank */}
-      <div style={{
+      <div
+        role="img"
+        aria-label={`Fishtank: the emissary is ${ANIMATION_LABELS[animation].toLowerCase()}. Status: ${status === 'running' ? 'working in the depths' : status === 'error' ? 'troubled waters' : status === 'stopped' ? 'resting at shore' : 'awaiting command'}.`}
+        style={{
         flex: 1,
         minHeight: 420,
         background: 'linear-gradient(180deg, #041020 0%, #081a35 25%, #0b2445 50%, #0d2a4a 75%, #0a1e38 100%)',
@@ -364,7 +367,7 @@ export const Fishtank: React.FC<FishtankProps> = ({ status }) => {
         </div>
 
         {/* Speech bubble */}
-        <div key={sayingKey} style={{
+        <div key={sayingKey} aria-live="polite" aria-label="Emissary says" style={{
           position: 'absolute',
           top: 20,
           right: 20,
@@ -388,7 +391,7 @@ export const Fishtank: React.FC<FishtankProps> = ({ status }) => {
         </div>
 
         {/* Status bar */}
-        <div style={{
+        <div role="status" aria-live="polite" style={{
           position: 'absolute',
           bottom: 16,
           left: '50%',

@@ -56,7 +56,11 @@ export const WelcomeOverlay: React.FC<WelcomeOverlayProps> = ({ onDismiss }) => 
   const isLast = step === steps.length - 1
 
   return (
-    <div style={{
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Welcome tour"
+      style={{
       position: 'fixed',
       inset: 0,
       background: 'rgba(4, 8, 20, 0.92)',
@@ -89,7 +93,7 @@ export const WelcomeOverlay: React.FC<WelcomeOverlayProps> = ({ onDismiss }) => 
           animation: 'shimmerBar 3s ease-in-out infinite',
         }} />
 
-        <div style={{ fontSize: 48, marginBottom: 16 }}>{current.emoji}</div>
+        <div style={{ fontSize: 48, marginBottom: 16 }} aria-hidden="true">{current.emoji}</div>
         <h2 style={{ fontSize: 22, fontWeight: 700, color: 'var(--color-primary)', marginBottom: 16 }}>
           {current.title}
         </h2>
@@ -104,9 +108,9 @@ export const WelcomeOverlay: React.FC<WelcomeOverlayProps> = ({ onDismiss }) => 
         </p>
 
         {/* Progress dots */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 24 }} role="tablist" aria-label="Tour progress">
           {steps.map((_, i) => (
-            <div key={i} style={{
+            <div key={i} role="tab" aria-selected={i === step} aria-label={`Step ${i + 1} of ${steps.length}`} style={{
               width: i === step ? 24 : 8,
               height: 8,
               borderRadius: 4,
@@ -120,6 +124,7 @@ export const WelcomeOverlay: React.FC<WelcomeOverlayProps> = ({ onDismiss }) => 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <button
             onClick={onDismiss}
+            aria-label="Skip welcome tour"
             style={{
               padding: '8px 16px',
               background: 'transparent',
@@ -136,6 +141,7 @@ export const WelcomeOverlay: React.FC<WelcomeOverlayProps> = ({ onDismiss }) => 
             {step > 0 && (
               <button
                 onClick={() => setStep(s => s - 1)}
+                aria-label="Go to previous step"
                 style={{
                   padding: '10px 20px',
                   background: 'transparent',
@@ -152,6 +158,7 @@ export const WelcomeOverlay: React.FC<WelcomeOverlayProps> = ({ onDismiss }) => 
             )}
             <button
               onClick={() => isLast ? onDismiss() : setStep(s => s + 1)}
+              aria-label={isLast ? 'Finish tour and start using the app' : 'Go to next step'}
               style={{
                 padding: '10px 24px',
                 background: 'var(--color-primary)',
