@@ -101,8 +101,8 @@ ipcMain.handle(IPC_CHANNELS.CHECK_ENV, async () => {
   return results
 })
 
-ipcMain.handle(IPC_CHANNELS.DETECT_PATH, () => {
-  return detectOpenClawPath()
+ipcMain.handle(IPC_CHANNELS.DETECT_PATH, async () => {
+  return await detectOpenClawPath()
 })
 
 ipcMain.handle(IPC_CHANNELS.BROWSE_FOLDER, async () => {

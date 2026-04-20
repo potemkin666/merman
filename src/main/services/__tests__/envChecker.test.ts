@@ -43,13 +43,14 @@ describe('envChecker', () => {
       }) as unknown as typeof execFile)
 
       // Mock config for directory checks
-      mockGetConfig.mockReturnValue({
+      mockGetConfig.mockResolvedValue({
         openClawPath: '/some/path',
         workspacePath: '',
         model: 'gpt-4o',
         provider: 'openai',
         apiKey: '',
         presets: [],
+        emissaryName: '',
       })
       mockExistsSync.mockReturnValue(true)
 
@@ -67,13 +68,14 @@ describe('envChecker', () => {
         return { on: vi.fn() }
       }) as unknown as typeof execFile)
 
-      mockGetConfig.mockReturnValue({
+      mockGetConfig.mockResolvedValue({
         openClawPath: '',
         workspacePath: '',
         model: 'gpt-4o',
         provider: 'openai',
         apiKey: '',
         presets: [],
+        emissaryName: '',
       })
       mockExistsSync.mockReturnValue(false)
 
@@ -88,13 +90,14 @@ describe('envChecker', () => {
         return { on: vi.fn() }
       }) as unknown as typeof execFile)
 
-      mockGetConfig.mockReturnValue({
+      mockGetConfig.mockResolvedValue({
         openClawPath: '/my/openclaw',
         workspacePath: '',
         model: 'gpt-4o',
         provider: 'openai',
         apiKey: '',
         presets: [],
+        emissaryName: '',
       })
 
       // dir exists, package.json exists, node_modules exists
@@ -120,13 +123,14 @@ describe('envChecker', () => {
         return { on: vi.fn() }
       }) as unknown as typeof execFile)
 
-      mockGetConfig.mockReturnValue({
+      mockGetConfig.mockResolvedValue({
         openClawPath: '',
         workspacePath: '',
         model: 'gpt-4o',
         provider: 'openai',
         apiKey: '',
         presets: [],
+        emissaryName: '',
       })
       mockExistsSync.mockReturnValue(false)
 
@@ -138,47 +142,58 @@ describe('envChecker', () => {
   })
 
   describe('detectOpenClawPath', () => {
-    it('returns empty string when HOME is not set and no paths exist', () => {
+    it('returns empty string when HOME is not set and no paths exist', async () => {
       const origHome = process.env.HOME
       const origUserProfile = process.env.USERPROFILE
       delete process.env.HOME
       delete process.env.USERPROFILE
       mockExistsSync.mockReturnValue(false)
-
-      const result = detectOpenClawPath()
-      expect(result).toBe('')
-
-      process.env.HOME = origHome
-      if (origUserProfile !== undefined) process.env.USERPROFILE = origUserProfile
-    })
-
-    it('returns the configured openClawPath first if it is valid', () => {
-      mockGetConfig.mockReturnValue({
-        openClawPath: '/configured/openclaw',
-        workspacePath: '',
-        model: 'gpt-4o',
-        provider: 'openai',
-        apiKey: '',
-        presets: [],
-      })
-      mockExistsSync.mockImplementation((p: unknown) => {
-        const path = String(p)
-        return path === '/configured/openclaw' || path === '/configured/openclaw/package.json'
-      })
-
-      const result = detectOpenClawPath()
-      expect(result).toBe('/configured/openclaw')
-    })
-
-    it('returns the first matching hardcoded path with package.json', () => {
-      const home = process.env.HOME || '/home/test'
-      mockGetConfig.mockReturnValue({
+      mockGetConfig.mockResolvedValue({
         openClawPath: '',
         workspacePath: '',
         model: 'gpt-4o',
         provider: 'openai',
         apiKey: '',
         presets: [],
+        emissaryName: '',
+      })
+
+      const result = await detectOpenClawPath()
+      expect(result).toBe('')
+
+      process.env.HOME = origHome
+      if (origUserProfile !== undefined) process.env.USERPROFILE = origUserProfile
+    })
+
+    it('returns the configured openClawPath first if it is valid', async () => {
+      mockGetConfig.mockResolvedValue({
+        openClawPath: '/configured/openclaw',
+        workspacePath: '',
+        model: 'gpt-4o',
+        provider: 'openai',
+        apiKey: '',
+        presets: [],
+        emissaryName: '',
+      })
+      mockExistsSync.mockImplementation((p: unknown) => {
+        const path = String(p)
+        return path === '/configured/openclaw' || path === '/configured/openclaw/package.json'
+      })
+
+      const result = await detectOpenClawPath()
+      expect(result).toBe('/configured/openclaw')
+    })
+
+    it('returns the first matching hardcoded path with package.json', async () => {
+      const home = process.env.HOME || '/home/test'
+      mockGetConfig.mockResolvedValue({
+        openClawPath: '',
+        workspacePath: '',
+        model: 'gpt-4o',
+        provider: 'openai',
+        apiKey: '',
+        presets: [],
+        emissaryName: '',
       })
       mockExistsSync.mockImplementation((p: unknown) => {
         const path = String(p)
@@ -187,19 +202,20 @@ describe('envChecker', () => {
         return false
       })
 
-      const result = detectOpenClawPath()
+      const result = await detectOpenClawPath()
       expect(result).toBe(`${home}/openclaw`)
     })
 
-    it('finds git clones named openclaw in parent directories', () => {
+    it('finds git clones named openclaw in parent directories', async () => {
       const home = process.env.HOME || '/home/test'
-      mockGetConfig.mockReturnValue({
+      mockGetConfig.mockResolvedValue({
         openClawPath: '',
         workspacePath: '',
         model: 'gpt-4o',
         provider: 'openai',
         apiKey: '',
         presets: [],
+        emissaryName: '',
       })
       // No hardcoded candidates exist
       mockExistsSync.mockImplementation((p: unknown) => {
@@ -219,7 +235,7 @@ describe('envChecker', () => {
         return { isDirectory: () => true } as ReturnType<typeof statSync>
       })
 
-      const result = detectOpenClawPath()
+      const result = await detectOpenClawPath()
       expect(result).toBe(`${home}/projects/OpenClaw`)
     })
   })

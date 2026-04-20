@@ -26,8 +26,8 @@ function checkCommand(name: string, cmd: string, versionFlag = '--version'): Pro
   })
 }
 
-function checkOpenClawDir(): EnvCheckResult {
-  const config = getConfig()
+async function checkOpenClawDir(): Promise<EnvCheckResult> {
+  const config = await getConfig()
   const dir = config.openClawPath
   if (!dir) {
     return {
@@ -63,8 +63,8 @@ function checkOpenClawDir(): EnvCheckResult {
   return { name: 'OpenClaw Directory', ok: true, version: 'ready' }
 }
 
-function checkOpenClawConfig(): EnvCheckResult {
-  const config = getConfig()
+async function checkOpenClawConfig(): Promise<EnvCheckResult> {
+  const config = await getConfig()
   const dir = config.openClawPath
   if (!dir || !existsSync(dir)) {
     return {
@@ -90,18 +90,14 @@ function checkOpenClawConfig(): EnvCheckResult {
 }
 
 export async function checkEnvironment(): Promise<EnvCheckResult[]> {
-  const [nodeResult, npmResult, gitResult] = await Promise.all([
+  const [nodeResult, npmResult, gitResult, dirResult, configResult] = await Promise.all([
     checkCommand('Node.js', 'node'),
     checkCommand('npm', 'npm'),
     checkCommand('git', 'git'),
-  ])
-  return [
-    nodeResult,
-    npmResult,
-    gitResult,
     checkOpenClawDir(),
     checkOpenClawConfig(),
-  ]
+  ])
+  return [nodeResult, npmResult, gitResult, dirResult, configResult]
 }
 
 /**
@@ -114,12 +110,12 @@ export async function checkEnvironment(): Promise<EnvCheckResult[]> {
  *
  * Returns the first path that contains a package.json, or empty string.
  */
-export function detectOpenClawPath(): string {
+export async function detectOpenClawPath(): Promise<string> {
   const home = process.env.HOME || process.env.USERPROFILE || ''
   if (!home) return ''
 
   // 1. Check the already-configured path first
-  const config = getConfig()
+  const config = await getConfig()
   if (config.openClawPath && isValidOpenClawDir(config.openClawPath)) {
     return config.openClawPath
   }

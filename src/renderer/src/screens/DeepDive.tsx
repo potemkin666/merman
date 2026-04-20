@@ -207,7 +207,7 @@ export const DeepDive: React.FC<DeepDiveProps> = ({ config }) => {
   }, [invoke])
 
   const handleDiveIn = useCallback(async () => {
-    const cwd = config.openClawPath || process.cwd?.() || ''
+    const cwd = config.openClawPath || ''
     const result = await invoke<CommandResult>(IPC_CHANNELS.TERMINAL_SPAWN, cwd)
     if (result.ok) {
       setIsRunning(true)
