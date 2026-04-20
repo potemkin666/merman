@@ -14,11 +14,13 @@ function checkCommand(name: string, cmd: string, versionFlag = '--version'): Pro
     message: `${name} not found. Install it and make sure it is available in your PATH.`,
   }
   return new Promise((resolve) => {
-    const child = execFile(cmd, [versionFlag], { encoding: 'utf8', timeout: 5000 }, (err, stdout) => {
+    const child = execFile(cmd, [versionFlag], { encoding: 'utf8', timeout: 5000, shell: true }, (err, stdout) => {
       if (err) {
         resolve(notFoundResult)
       } else {
-        const version = stdout.trim().split('\n')[0].replace(/^v/, '')
+        const raw = stdout.trim().split('\n')[0]
+        const versionMatch = raw.match(/(\d+\.\d+[\d.a-zA-Z\-]*)/)
+        const version = versionMatch ? versionMatch[1] : raw.replace(/^v/, '')
         resolve({ name, version, ok: true })
       }
     })
