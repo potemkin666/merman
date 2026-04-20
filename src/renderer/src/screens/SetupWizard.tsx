@@ -46,12 +46,14 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
   const [elapsed, setElapsed] = useState(0)
   const logBottomRef = useRef<HTMLDivElement>(null)
 
+  const MAX_INSTALL_LOG_LINES = 200
+
   // Stream ON_LOG events into the install mini-log while installing
   useIpcListener(IPC_CHANNELS.ON_LOG, (...args: unknown[]) => {
     if (!installing) return
     const entry = args[0] as LogEntry
     if (entry?.message) {
-      setInstallLogs((prev) => [...prev.slice(-200), entry.message.trim()])
+      setInstallLogs((prev) => [...prev.slice(-MAX_INSTALL_LOG_LINES), entry.message.trim()])
     }
   }, [installing])
 

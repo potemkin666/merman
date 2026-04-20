@@ -27,8 +27,8 @@ export function validatePath(path: string): { ok: boolean; error?: string } {
   }
 
   // Reject shell metacharacters and command separators
-  const dangerous = /[;|&`$(){}[\]!<>*?\n\r]/
-  if (dangerous.test(path)) {
+  const shellMetacharactersPattern = /[;|&`$(){}[\]!<>*?\n\r]/
+  if (shellMetacharactersPattern.test(path)) {
     return { ok: false, error: 'Path contains invalid characters. Please use a simple directory path.' }
   }
 
