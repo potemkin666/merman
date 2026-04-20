@@ -7,12 +7,20 @@ import laughingImg from '../assets/emissary/laughing.png'
 import wavingImg from '../assets/emissary/waving.png'
 import cryingImg from '../assets/emissary/crying.png'
 import smugImg from '../assets/emissary/smug.png'
+import thinkingImg from '../assets/emissary/thinking.png'
+import flexingImg from '../assets/emissary/flexing.png'
+import excitedImg from '../assets/emissary/excited.png'
+import distressedImg from '../assets/emissary/distressed.png'
 
 const EMOTION_IMAGES: Record<EmissaryEmotion, string> = {
   laughing: laughingImg,
   waving: wavingImg,
   crying: cryingImg,
   smug: smugImg,
+  thinking: thinkingImg,
+  flexing: flexingImg,
+  excited: excitedImg,
+  distressed: distressedImg,
 }
 
 interface EmissaryFigureProps {

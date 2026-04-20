@@ -103,37 +103,59 @@ export function getEmissaryStyle(animation: EmissaryAnimation, status: ServiceSt
 
 // ── Emotion mapping for PNG sprite selection ──────────────────────────────────
 
-export type EmissaryEmotion = 'smug' | 'laughing' | 'waving' | 'crying'
+export type EmissaryEmotion =
+  | 'smug'
+  | 'laughing'
+  | 'waving'
+  | 'crying'
+  | 'thinking'
+  | 'flexing'
+  | 'excited'
+  | 'distressed'
 
 /**
- * Derives which of the four merman portrait images to display based on the
+ * Derives which of the eight merman portrait images to display based on the
  * current animation, service status, and weather state.
  *
  * Priority (highest → lowest):
- *   1. Error status or thunderstorm → crying
- *   2. Running status or waving/beckoning animation → waving
- *   3. Golden weather or playful/energetic animations → laughing
- *   4. Everything else → smug (default idle)
+ *   1. Error status → distressed
+ *   2. Fearful animation or thunderstorm → crying
+ *   3. Running status or waving/beckoning animation → waving
+ *   4. Flexing or posing animation → flexing
+ *   5. Golden weather or highly energetic animations → excited
+ *   6. Playful/rhythmic animations → laughing
+ *   7. Contemplative animations → thinking
+ *   8. Everything else → smug (default idle)
  */
 export function getEmissaryEmotion(
   animation: EmissaryAnimation,
   status: ServiceStatus,
   weather: Weather,
 ): EmissaryEmotion {
-  if (status === 'error' || weather === 'thunderstorm') return 'crying'
+  if (status === 'error') return 'distressed'
+  if (animation === 'fearful' || weather === 'thunderstorm') return 'crying'
   if (
     status === 'running' ||
     animation === 'waving' ||
     animation === 'beckoning'
   ) return 'waving'
+  if (animation === 'flexing' || animation === 'posing') return 'flexing'
   if (
     weather === 'golden' ||
-    animation === 'flirty' ||
-    animation === 'flexing' ||
-    animation === 'singing' ||
-    animation === 'collecting-pearls' ||
     animation === 'chasing-fish' ||
-    animation === 'juggling-shells'
+    animation === 'juggling-shells' ||
+    animation === 'collecting-pearls'
+  ) return 'excited'
+  if (
+    animation === 'flirty' ||
+    animation === 'singing' ||
+    animation === 'preening'
   ) return 'laughing'
+  if (
+    animation === 'thinking' ||
+    animation === 'examining-scroll' ||
+    animation === 'meditating' ||
+    animation === 'gazing'
+  ) return 'thinking'
   return 'smug'
 }
