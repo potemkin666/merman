@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { StatusCard } from '../components/StatusCard'
+import { BottleGrid } from '../components/BottleGrid'
 import { Tooltip } from '../components/Tooltip'
 import { HelpHint } from '../components/Tooltip'
 import type { AppConfig, ServiceStatus, TaskResult, EnvCheckResult } from '../../../shared/types'
@@ -225,8 +226,8 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
       </div>
 
       <h2 style={{ fontSize: 16, fontWeight: 600, color: 'var(--color-text)', marginBottom: 16, display: 'flex', alignItems: 'center' }}>
-        Recent Dispatches
-        <HelpHint text="These are tasks you have sent to the emissary recently. 'Returned' means it worked. 'Lost' means something went wrong — check the Tide Log for details." />
+        Messages in Bottles
+        <HelpHint text="These are tasks you have sent to the emissary. Each bottle holds a past dispatch. Click one to uncork it and read the results. Cracked bottles mean something went wrong." />
       </h2>
       {recentTasks.length === 0 ? (
         <div style={{
@@ -239,43 +240,10 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
           fontSize: 14,
           lineHeight: 1.6,
         }}>
-          No dispatches yet. Head to <button onClick={() => onNavigate('dispatch')} aria-label="Navigate to Dispatch screen" style={{ background: 'none', color: 'var(--color-primary)', textDecoration: 'underline', fontSize: 14, cursor: 'pointer' }}>Dispatch</button> to send your first task!
+          No bottles yet. Head to <button onClick={() => onNavigate('dispatch')} aria-label="Navigate to Dispatch screen" style={{ background: 'none', color: 'var(--color-primary)', textDecoration: 'underline', fontSize: 14, cursor: 'pointer' }}>Dispatch</button> to send your first message into the deep!
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }} role="list" aria-label="Recent task dispatches">
-          {recentTasks.slice(0, 8).map((task) => (
-            <div key={task.id} role="listitem" style={{
-              background: 'var(--color-panel)',
-              border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-md)',
-              padding: '12px 16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-            }}>
-              <Tooltip text={task.status === 'done' ? 'This task completed successfully.' : task.status === 'error' ? 'This task failed — check Tide Log for details.' : 'This task is still in progress.'}>
-                <span style={{
-                  fontSize: 11,
-                  padding: '2px 8px',
-                  borderRadius: 'var(--radius-sm)',
-                  background: task.status === 'done' ? 'rgba(45,212,160,0.15)' :
-                    task.status === 'error' ? 'rgba(232,93,93,0.15)' : 'rgba(0,200,212,0.15)',
-                  color: task.status === 'done' ? 'var(--color-success)' :
-                    task.status === 'error' ? 'var(--color-error)' : 'var(--color-primary)',
-                  fontWeight: 600,
-                }}>
-                  {task.status === 'done' ? 'returned' : task.status === 'error' ? 'lost' : task.status}
-                </span>
-              </Tooltip>
-              <span style={{ flex: 1, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {task.prompt}
-              </span>
-              <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
-                {new Date(task.startedAt).toLocaleTimeString()}
-              </span>
-            </div>
-          ))}
-        </div>
+        <BottleGrid tasks={recentTasks} />
       )}
     </div>
   )

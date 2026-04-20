@@ -5,6 +5,7 @@ import { IPC_CHANNELS } from '../shared/ipc'
 import { checkEnvironment, detectOpenClawPath } from './services/envChecker'
 import { runCommand, killProcess } from './services/processRunner'
 import { getConfig, setConfig } from './services/configService'
+import { getApiKey, setApiKey } from './services/keychainService'
 import { getLogs, addLog } from './services/logService'
 
 let mainWindow: BrowserWindow | null = null
@@ -73,6 +74,13 @@ ipcMain.handle(IPC_CHANNELS.DETECT_PATH, () => {
 ipcMain.handle(IPC_CHANNELS.GET_CONFIG, () => getConfig())
 
 ipcMain.handle(IPC_CHANNELS.SET_CONFIG, (_event, updates) => setConfig(updates))
+
+ipcMain.handle(IPC_CHANNELS.GET_API_KEY, () => getApiKey())
+
+ipcMain.handle(IPC_CHANNELS.SET_API_KEY, (_event, key: string) => {
+  setApiKey(key)
+  return { ok: true }
+})
 
 ipcMain.handle(IPC_CHANNELS.GET_LOGS, () => getLogs())
 

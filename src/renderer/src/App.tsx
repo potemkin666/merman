@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { NavSidebar } from './components/NavSidebar'
 import { WelcomeOverlay } from './components/WelcomeOverlay'
+import { ElectronUnavailable } from './components/ElectronUnavailable'
 import { Harbor } from './screens/Harbor'
 import { SetupWizard } from './screens/SetupWizard'
 import { Dispatch } from './screens/Dispatch'
@@ -8,11 +9,13 @@ import { Fishtank } from './screens/Fishtank'
 import { TideLog } from './screens/TideLog'
 import { DeepConfig } from './screens/DeepConfig'
 import { useAppState } from './hooks/useAppState'
+import { isElectronAvailable } from './hooks/useIpc'
 
 const WELCOME_KEY = 'openclaw-harbor-welcome-seen'
 
 export default function App() {
   const [page, setPage] = useState('harbor')
+  const electronAvailable = isElectronAvailable()
   const { config, logs, status, recentTasks, loading, updateConfig, addTask, setStatus } = useAppState()
   const [showWelcome, setShowWelcome] = useState(false)
 
@@ -25,6 +28,11 @@ export default function App() {
   const dismissWelcome = () => {
     setShowWelcome(false)
     localStorage.setItem(WELCOME_KEY, 'true')
+  }
+
+  // If the Electron bridge is not available, show a helpful error screen
+  if (!electronAvailable) {
+    return <ElectronUnavailable />
   }
 
   if (loading) {

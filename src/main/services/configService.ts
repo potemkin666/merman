@@ -40,7 +40,9 @@ export function getConfig(): AppConfig {
 
 export function setConfig(updates: Partial<AppConfig>): AppConfig {
   const current = getConfig()
-  const updated = { ...current, ...updates }
+  // Never persist apiKey in the config JSON — it is stored securely via keychainService
+  const { apiKey: _stripped, ...safeUpdates } = updates
+  const updated = { ...current, ...safeUpdates, apiKey: '' }
   writeFileSync(getConfigPath(), JSON.stringify(updated, null, 2))
   return updated
 }

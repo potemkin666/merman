@@ -3,6 +3,8 @@ export const IPC_CHANNELS = {
   DETECT_PATH: 'detect-path',
   GET_CONFIG: 'get-config',
   SET_CONFIG: 'set-config',
+  GET_API_KEY: 'get-api-key',
+  SET_API_KEY: 'set-api-key',
   RUN_SETUP: 'run-setup',
   START_SERVICE: 'start-service',
   STOP_SERVICE: 'stop-service',

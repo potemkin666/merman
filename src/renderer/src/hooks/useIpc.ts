@@ -11,10 +11,19 @@ declare global {
   }
 }
 
+/** Whether the Electron preload bridge is available. */
+export function isElectronAvailable(): boolean {
+  return typeof window !== 'undefined' && !!window.electronAPI
+}
+
 export function useIpc() {
   const invoke = useCallback(
     async <T = unknown>(channel: IpcChannel, ...args: unknown[]): Promise<T> => {
-      if (!window.electronAPI) throw new Error('electronAPI not available')
+      if (!window.electronAPI) {
+        throw new Error(
+          'The system bridge is not available. Please re-launch the app from the desktop.'
+        )
+      }
       return window.electronAPI.invoke(channel, ...args) as Promise<T>
     },
     []
@@ -28,7 +37,7 @@ export function useIpc() {
     []
   )
 
-  return { invoke, on }
+  return { invoke, on, available: isElectronAvailable() }
 }
 
 export function useIpcListener(

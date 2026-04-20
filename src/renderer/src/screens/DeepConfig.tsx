@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { Tooltip } from '../components/Tooltip'
 import { HelpHint } from '../components/Tooltip'
+import { useIpc } from '../hooks/useIpc'
+import { IPC_CHANNELS } from '../../../shared/ipc'
 import type { AppConfig, Preset } from '../../../shared/types'
 
 interface DeepConfigProps {
@@ -28,16 +30,48 @@ const labelStyle: React.CSSProperties = {
 }
 
 export const DeepConfig: React.FC<DeepConfigProps> = ({ config, onSave }) => {
+  const { invoke } = useIpc()
   const [form, setForm] = useState(config)
+  const [apiKey, setApiKeyState] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [newPreset, setNewPreset] = useState({ name: '', mode: '' })
+  const [detecting, setDetecting] = useState(false)
 
   useEffect(() => { setForm(config) }, [config])
 
+  // Load API key from secure storage on mount
+  useEffect(() => {
+    invoke<string>(IPC_CHANNELS.GET_API_KEY).then((key) => {
+      if (key) setApiKeyState(key)
+    }).catch(() => {
+      // Secure storage may not be available; key field starts empty
+    })
+  }, [invoke])
+
+  const handleAutoDetect = async () => {
+    setDetecting(true)
+    try {
+      const detected = await invoke<string>(IPC_CHANNELS.DETECT_PATH)
+      if (detected) {
+        setForm((f) => ({ ...f, openClawPath: detected }))
+      }
+    } catch {
+      // Detection failed silently
+    } finally {
+      setDetecting(false)
+    }
+  }
+
   const handleSave = async () => {
     setSaving(true)
+    // Save config (without apiKey) and save apiKey separately via secure storage
     await onSave(form)
+    try {
+      await invoke(IPC_CHANNELS.SET_API_KEY, apiKey)
+    } catch {
+      // safeStorage might not be available; key will not persist
+    }
     setSaving(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
@@ -99,6 +133,27 @@ export const DeepConfig: React.FC<DeepConfigProps> = ({ config, onSave }) => {
             <input type="text" value={form.openClawPath}
               onChange={(e) => setForm((f) => ({ ...f, openClawPath: e.target.value }))}
               placeholder="/path/to/openclaw" aria-label="OpenClaw installation path" style={inputStyle} />
+            <div style={{ marginTop: 6 }}>
+              <Tooltip text="Scan common folders on your computer to find an OpenClaw installation automatically.">
+                <button
+                  onClick={handleAutoDetect}
+                  disabled={detecting}
+                  aria-label={detecting ? 'Scanning for OpenClaw' : 'Auto-detect OpenClaw path'}
+                  style={{
+                    padding: '6px 14px',
+                    background: 'rgba(0,200,212,0.1)',
+                    color: 'var(--color-primary)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    cursor: detecting ? 'wait' : 'pointer',
+                  }}
+                >
+                  {detecting ? '⏳ Scanning...' : '🔍 Auto-detect'}
+                </button>
+              </Tooltip>
+            </div>
           </div>
           <div>
             <label style={labelStyle}>
@@ -141,11 +196,11 @@ export const DeepConfig: React.FC<DeepConfigProps> = ({ config, onSave }) => {
             API Key
             <HelpHint text="A secret key from your AI provider that lets the agent talk to the AI service. Get one from platform.openai.com (for OpenAI) or console.anthropic.com (for Anthropic). It starts with 'sk-'. Keep it private!" />
           </label>
-          <input type="password" value={form.apiKey}
-            onChange={(e) => setForm((f) => ({ ...f, apiKey: e.target.value }))}
+          <input type="password" value={apiKey}
+            onChange={(e) => setApiKeyState(e.target.value)}
             placeholder="sk-..." aria-label="API key" style={inputStyle} />
           <p style={{ marginTop: 6, fontSize: 11, color: 'var(--color-text-muted)' }}>
-            🔒 This key is stored locally on your computer only. It is never sent anywhere except to the AI provider you chose.
+            🔒 This key is stored securely using your operating system&apos;s keychain. It is never saved as plain text.
           </p>
         </div>
       </section>
