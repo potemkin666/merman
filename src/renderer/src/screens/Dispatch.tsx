@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useIpc } from '../hooks/useIpc'
 import { IPC_CHANNELS } from '../../../shared/ipc'
-import type { AppConfig, TaskResult, Preset } from '../../../shared/types'
+import type { AppConfig, TaskResult, Preset, CommandResult } from '../../../shared/types'
 
 interface DispatchProps {
   config: AppConfig
@@ -21,26 +21,26 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
   const [prompt, setPrompt] = useState('')
   const [mode, setMode] = useState('default')
   const [dispatching, setDispatching] = useState(false)
-  const [output, setOutput] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [result, setResult] = useState<CommandResult | null>(null)
 
   const allModes = [
     ...AGENT_MODES,
-    ...config.presets.map((p: Preset) => ({ value: p.mode, label: p.name })),
+    ...config.presets
+      .filter((p: Preset) => !AGENT_MODES.some((m) => m.value === p.mode))
+      .map((p: Preset) => ({ value: p.mode, label: p.name })),
   ]
 
   const getStatusCopy = () => {
     if (dispatching) return '🌊 Dispatched into the depths...'
-    if (error) return '⚠️ The current returned turbulent.'
-    if (output) return '🦞 Surfacing with results.'
-    return '🔱 The emissary awaits your command.'
+    if (result && !result.ok) return '⚠️ The waters are unstable. Review configuration.'
+    if (result?.ok) return '🔱 Surfacing with results.'
+    return '🔱 The emissary is awaiting your command.'
   }
 
   const handleDispatch = async () => {
     if (!prompt.trim()) return
     setDispatching(true)
-    setOutput(null)
-    setError(null)
+    setResult(null)
 
     const task: TaskResult = {
       id: Date.now().toString(),
@@ -50,32 +50,27 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
       startedAt: new Date().toISOString(),
     }
 
-    const result = await invoke<{ ok: boolean; output?: string; error?: string }>(
+    const res = await invoke<CommandResult>(
       IPC_CHANNELS.DISPATCH_TASK,
       { prompt: prompt.trim(), mode, openClawPath: config.openClawPath }
     )
 
     const finalTask: TaskResult = {
       ...task,
-      status: result.ok ? 'done' : 'error',
-      output: result.ok ? result.output : undefined,
+      status: res.ok ? 'done' : 'error',
+      output: res.ok ? res.output : undefined,
       finishedAt: new Date().toISOString(),
     }
 
     onTaskAdded(finalTask)
     setDispatching(false)
-
-    if (result.ok) {
-      setOutput(result.output || 'Task completed successfully.')
-    } else {
-      setError(result.error || 'Unknown error')
-    }
+    setResult(res)
   }
 
   return (
     <div style={{ padding: 32, maxWidth: 900, margin: '0 auto' }}>
       <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--color-primary)', marginBottom: 8 }}>
-        The Dispatch Chamber
+        Dispatch
       </h1>
       <p style={{ color: 'var(--color-text-muted)', marginBottom: 32, fontSize: 14 }}>
         {getStatusCopy()}
@@ -89,7 +84,7 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
         marginBottom: 20,
       }}>
         <label style={{ display: 'block', marginBottom: 8, fontSize: 13, color: 'var(--color-text-muted)' }}>
-          Instruction / Prompt
+          Instruction
         </label>
         <textarea
           value={prompt}
@@ -113,7 +108,7 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
         <div style={{ display: 'flex', gap: 12, marginTop: 16, alignItems: 'center' }}>
           <div style={{ flex: 1 }}>
             <label style={{ display: 'block', marginBottom: 6, fontSize: 12, color: 'var(--color-text-muted)' }}>
-              Agent Mode
+              Mode
             </label>
             <select
               value={mode}
@@ -156,35 +151,90 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
         </div>
       </div>
 
-      {(output || error) && (
+      {/* Result or error */}
+      {result && result.ok && (
         <div style={{
           background: 'var(--color-panel)',
-          border: `1px solid ${error ? 'var(--color-error)' : 'var(--color-border)'}`,
+          border: '1px solid var(--color-border)',
           borderRadius: 'var(--radius-lg)',
           padding: 20,
         }}>
-          <h3 style={{
-            fontSize: 13,
-            fontWeight: 600,
-            marginBottom: 12,
-            color: error ? 'var(--color-error)' : 'var(--color-success)',
-          }}>
-            {error ? '❌ Error' : '✅ Result'}
+          <h3 style={{ fontSize: 13, fontWeight: 600, marginBottom: 12, color: 'var(--color-success)' }}>
+            ✅ Returned to shore
           </h3>
           <pre style={{
             fontSize: 12,
             fontFamily: 'monospace',
             whiteSpace: 'pre-wrap',
             wordBreak: 'break-all',
-            color: error ? 'var(--color-error)' : 'var(--color-text)',
+            color: 'var(--color-text)',
             background: 'var(--color-surface)',
             padding: 12,
             borderRadius: 'var(--radius-md)',
             maxHeight: 300,
             overflowY: 'auto',
           }}>
-            {error || output}
+            {result.output || 'Task completed successfully.'}
           </pre>
+        </div>
+      )}
+
+      {result && !result.ok && (
+        <div style={{
+          background: 'var(--color-panel)',
+          border: '1px solid rgba(232,93,93,0.3)',
+          borderRadius: 'var(--radius-lg)',
+          padding: 20,
+        }}>
+          <h3 style={{ fontSize: 13, fontWeight: 600, marginBottom: 12, color: 'var(--color-error)' }}>
+            ❌ The emissary returned empty-handed
+          </h3>
+          {result.explanation ? (
+            <div style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 12 }}>
+              <p style={{ color: 'var(--color-text)', marginBottom: 4 }}>
+                <strong>What happened:</strong> {result.explanation.what}
+              </p>
+              <p style={{ color: 'var(--color-text-muted)', marginBottom: 4 }}>
+                <strong>Likely cause:</strong> {result.explanation.cause}
+              </p>
+              <p style={{ color: 'var(--color-text-muted)' }}>
+                <strong>What to do:</strong> {result.explanation.action}
+              </p>
+            </div>
+          ) : (
+            <pre style={{
+              fontSize: 12,
+              fontFamily: 'monospace',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-all',
+              color: 'var(--color-error)',
+              background: 'var(--color-surface)',
+              padding: 12,
+              borderRadius: 'var(--radius-md)',
+              maxHeight: 200,
+              overflowY: 'auto',
+            }}>
+              {result.error}
+            </pre>
+          )}
+          {result.explanation?.retryable !== false && (
+            <button
+              onClick={handleDispatch}
+              disabled={dispatching}
+              style={{
+                marginTop: 12,
+                padding: '8px 18px',
+                background: 'var(--color-warning)',
+                color: '#0a0f1e',
+                borderRadius: 'var(--radius-md)',
+                fontWeight: 600,
+                fontSize: 13,
+                cursor: 'pointer',
+              }}
+            >
+              🔄 Retry
+            </button>
+          )}
         </div>
       )}
     </div>

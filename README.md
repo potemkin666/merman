@@ -18,10 +18,10 @@ It wraps and orchestrates your existing OpenClaw install rather than replacing i
 
 | Layer | Technology |
 |-------|-----------|
-| Desktop shell | [Electron](https://www.electronjs.org/) 28 |
-| Build system | [electron-vite](https://electron-vite.org/) |
+| Desktop shell | [Electron](https://www.electronjs.org/) 41 |
+| Build system | [electron-vite](https://electron-vite.org/) 5 |
 | UI | [React](https://react.dev/) 18 + TypeScript |
-| Bundler | [Vite](https://vitejs.dev/) 5 |
+| Bundler | [Vite](https://vitejs.dev/) 6 |
 | Persistence | File-system JSON (via `app.getPath('userData')`) |
 
 ---
@@ -81,15 +81,25 @@ The app spawns OpenClaw as a child process, captures its stdout/stderr, translat
 - [x] Electron + React + Vite + TypeScript scaffold
 - [x] Dark underwater theme (CSS custom properties)
 - [x] Sidebar navigation
-- [x] Harbor dashboard with status card and recent dispatches
-- [x] Setup Wizard with real environment checks (Node, npm, git, OpenClaw dir)
-- [x] Start / stop OpenClaw service
+- [x] Harbor dashboard with status card, environment health, and recent dispatches
+- [x] Setup Wizard with real environment checks (Node, npm, git, OpenClaw dir, config files)
+- [x] Start / stop / restart OpenClaw service with real process tracking
 - [x] Dispatch screen with prompt entry, mode selection, output panel
 - [x] Tide Log with severity filters and raw/simplified toggle
 - [x] Deep Config with path fields, model settings, preset management
+- [x] Error translation with plain-English explanations and retry buttons
+- [x] Saved presets (Quick Chat, Starter Mode, Coding Helper, Local Researcher, Advanced Custom)
 - [x] IPC layer between main and renderer
 - [x] Persistent config stored in `userData/config.json`
-- [x] Persistent logs stored in `userData/logs.json`
+- [x] Local task history in browser localStorage
+
+## Limitations
+
+- The app does not rebuild or replace OpenClaw internals
+- No packaged installers yet (must run from source)
+- No cloud features, sync, or multi-user support
+- Log parsing is basic — more patterns can be added
+- Visual theme uses emoji icons; SVG/custom icons are a future improvement
 
 ---
 

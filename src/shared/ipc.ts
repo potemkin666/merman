@@ -5,6 +5,7 @@ export const IPC_CHANNELS = {
   RUN_SETUP: 'run-setup',
   START_SERVICE: 'start-service',
   STOP_SERVICE: 'stop-service',
+  RESTART_SERVICE: 'restart-service',
   DISPATCH_TASK: 'dispatch-task',
   GET_LOGS: 'get-logs',
   ON_LOG: 'on-log',

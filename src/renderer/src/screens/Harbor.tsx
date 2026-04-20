@@ -1,6 +1,6 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { StatusCard } from '../components/StatusCard'
-import type { AppConfig, ServiceStatus, TaskResult } from '../../../shared/types'
+import type { AppConfig, ServiceStatus, TaskResult, EnvCheckResult } from '../../../shared/types'
 import { useIpc } from '../hooks/useIpc'
 import { IPC_CHANNELS } from '../../../shared/ipc'
 
@@ -22,6 +22,15 @@ const btnBase: React.CSSProperties = {
 
 export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onStatusChange }) => {
   const { invoke } = useIpc()
+  const [envResults, setEnvResults] = useState<EnvCheckResult[]>([])
+  const [envChecked, setEnvChecked] = useState(false)
+
+  useEffect(() => {
+    invoke<EnvCheckResult[]>(IPC_CHANNELS.CHECK_ENV).then((results) => {
+      setEnvResults(results)
+      setEnvChecked(true)
+    })
+  }, [invoke])
 
   const handleSummon = async () => {
     onStatusChange('running')
@@ -33,14 +42,22 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
     onStatusChange('stopped')
   }
 
+  const handleRestart = async () => {
+    onStatusChange('running')
+    await invoke(IPC_CHANNELS.RESTART_SERVICE, config.openClawPath)
+  }
+
   const isRunning = status === 'running'
   const statusCopy = isRunning
     ? '⚡ The emissary stirs in the depths.'
     : status === 'stopped'
     ? '💤 The emissary has returned to the deep.'
     : status === 'error'
-    ? '🌊 Disturbance in the current.'
-    : '🦞 The emissary awaits your command.'
+    ? '🌊 The waters are unstable. Review configuration.'
+    : '🔱 The emissary is awaiting your command.'
+
+  const allOk = envResults.length > 0 && envResults.every((r) => r.ok)
+  const failCount = envResults.filter((r) => !r.ok).length
 
   return (
     <div style={{ padding: 32, maxWidth: 900, margin: '0 auto' }}>
@@ -53,6 +70,44 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
 
       <StatusCard status={status} model={config.model} provider={config.provider} />
 
+      {/* Environment Readiness */}
+      {envChecked && (
+        <div style={{
+          marginTop: 20,
+          background: 'var(--color-panel)',
+          border: '1px solid var(--color-border)',
+          borderRadius: 'var(--radius-lg)',
+          padding: '16px 20px',
+        }}>
+          <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 12 }}>
+            Environment Health
+          </h3>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {envResults.map((r) => (
+              <span key={r.name} style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '4px 12px',
+                borderRadius: 'var(--radius-sm)',
+                background: r.ok ? 'rgba(45,212,160,0.1)' : 'rgba(232,93,93,0.1)',
+                color: r.ok ? 'var(--color-success)' : 'var(--color-error)',
+                fontSize: 12,
+                fontWeight: 500,
+              }}>
+                {r.ok ? '●' : '○'} {r.name}
+              </span>
+            ))}
+          </div>
+          {!allOk && (
+            <p style={{ marginTop: 10, fontSize: 12, color: 'var(--color-warning)' }}>
+              {failCount} {failCount === 1 ? 'check' : 'checks'} not passing. Open Setup to resolve.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Quick Actions */}
       <div style={{ display: 'flex', gap: 12, marginTop: 24, marginBottom: 32 }}>
         <button
           onClick={handleSummon}
@@ -77,6 +132,18 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
           }}
         >
           ✋ Stop
+        </button>
+        <button
+          onClick={handleRestart}
+          disabled={!isRunning}
+          style={{
+            ...btnBase,
+            background: !isRunning ? 'transparent' : 'rgba(0,200,212,0.1)',
+            color: !isRunning ? 'var(--color-text-muted)' : 'var(--color-primary)',
+            border: `1px solid ${!isRunning ? 'var(--color-border)' : 'var(--color-primary)'}`,
+          }}
+        >
+          🔄 Restart
         </button>
       </div>
 
@@ -117,7 +184,7 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
                   task.status === 'error' ? 'var(--color-error)' : 'var(--color-primary)',
                 fontWeight: 600,
               }}>
-                {task.status}
+                {task.status === 'done' ? 'returned' : task.status === 'error' ? 'lost' : task.status}
               </span>
               <span style={{ flex: 1, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {task.prompt}

@@ -40,3 +40,17 @@ export interface Preset {
   mode: string
   description?: string
 }
+
+export interface ErrorExplanation {
+  what: string
+  cause: string
+  action: string
+  retryable: boolean
+}
+
+export interface CommandResult {
+  ok: boolean
+  output?: string
+  error?: string
+  explanation?: ErrorExplanation
+}

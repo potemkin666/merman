@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useIpc } from '../hooks/useIpc'
 import { IPC_CHANNELS } from '../../../shared/ipc'
-import type { EnvCheckResult, AppConfig } from '../../../shared/types'
+import type { EnvCheckResult, AppConfig, CommandResult } from '../../../shared/types'
 
 interface SetupWizardProps {
   config: AppConfig
@@ -39,7 +39,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
   const [checking, setChecking] = useState(false)
   const [path, setPath] = useState(config.openClawPath)
   const [installing, setInstalling] = useState(false)
-  const [installResult, setInstallResult] = useState<string | null>(null)
+  const [installResult, setInstallResult] = useState<CommandResult | null>(null)
 
   const checkPrereqs = async () => {
     setChecking(true)
@@ -48,11 +48,14 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
     setChecking(false)
   }
 
+  const allPrereqsOk = envResults.length > 0 && envResults.every((r) => r.ok)
+
   const runInstall = async () => {
     setInstalling(true)
+    setInstallResult(null)
     await onSave({ openClawPath: path })
-    const result = await invoke<{ ok: boolean; error?: string }>(IPC_CHANNELS.RUN_SETUP, path)
-    setInstallResult(result.ok ? 'success' : result.error || 'Unknown error')
+    const result = await invoke<CommandResult>(IPC_CHANNELS.RUN_SETUP, path)
+    setInstallResult(result)
     setInstalling(false)
     if (result.ok) setTimeout(() => setStep(4), 1000)
   }
@@ -65,6 +68,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
         Setup Wizard
       </h1>
 
+      {/* Progress bar */}
       <div style={{ marginBottom: 32 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
           {STEPS.map((s, i) => (
@@ -89,6 +93,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
         </div>
       </div>
 
+      {/* Step Content */}
       <div style={{
         background: 'var(--color-panel)',
         border: '1px solid var(--color-border)',
@@ -98,11 +103,12 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
       }}>
         {step === 0 && (
           <div>
-            <div style={{ fontSize: 40, marginBottom: 16 }}>🦞</div>
+            <div style={{ fontSize: 40, marginBottom: 16 }}>🔱</div>
             <h2 style={{ fontSize: 20, marginBottom: 12 }}>Welcome to OpenClaw Harbor</h2>
             <p style={{ color: 'var(--color-text-muted)', fontSize: 14, lineHeight: 1.6 }}>
-              This wizard will help you set up your OpenClaw environment. We'll check
-              your system prerequisites, configure paths, and install dependencies.
+              This wizard will prepare your environment for OpenClaw. We will check your
+              system prerequisites, configure your local paths, and install dependencies
+              — no terminal needed.
             </p>
           </div>
         )}
@@ -110,6 +116,10 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
         {step === 1 && (
           <div>
             <h2 style={{ fontSize: 20, marginBottom: 16 }}>Checking Prerequisites</h2>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: 13, marginBottom: 16, lineHeight: 1.5 }}>
+              We need Node.js, npm, and git installed on your system. We will also verify your
+              OpenClaw folder if one is already configured.
+            </p>
             <button onClick={checkPrereqs} disabled={checking} style={btnPrimary}>
               {checking ? '⏳ Checking...' : '🔍 Run Checks'}
             </button>
@@ -118,18 +128,47 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
                 {envResults.map((r) => (
                   <div key={r.name} style={{
                     display: 'flex',
-                    alignItems: 'center',
+                    alignItems: 'flex-start',
                     gap: 8,
-                    padding: '8px 12px',
+                    padding: '10px 12px',
                     background: 'var(--color-surface)',
                     borderRadius: 'var(--radius-md)',
+                    border: r.ok ? '1px solid transparent' : '1px solid rgba(232,93,93,0.2)',
                   }}>
-                    <span>{r.ok ? '✅' : '❌'}</span>
-                    <span style={{ fontWeight: 600, minWidth: 80 }}>{r.name}</span>
-                    {r.version && <span style={{ color: 'var(--color-text-muted)', fontSize: 12 }}>v{r.version}</span>}
-                    {!r.ok && <span style={{ color: 'var(--color-error)', fontSize: 12 }}>{r.message}</span>}
+                    <span style={{ flexShrink: 0 }}>{r.ok ? '✅' : '❌'}</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <span style={{ fontWeight: 600, fontSize: 13 }}>{r.name}</span>
+                        {r.version && <span style={{ color: 'var(--color-text-muted)', fontSize: 11 }}>v{r.version}</span>}
+                      </div>
+                      {r.message && (
+                        <p style={{
+                          color: r.ok ? 'var(--color-text-muted)' : 'var(--color-error)',
+                          fontSize: 12,
+                          marginTop: 4,
+                          lineHeight: 1.4,
+                        }}>
+                          {r.message}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 ))}
+                {!allPrereqsOk && (
+                  <div style={{
+                    marginTop: 8,
+                    padding: '10px 14px',
+                    background: 'rgba(240,165,0,0.08)',
+                    border: '1px solid rgba(240,165,0,0.2)',
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: 12,
+                    color: 'var(--color-warning)',
+                    lineHeight: 1.5,
+                  }}>
+                    <strong>Some checks did not pass.</strong> Resolve the issues above, then click
+                    "Run Checks" again. You can continue to the next step, but setup may fail.
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -148,28 +187,82 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
               placeholder="/path/to/openclaw"
               style={inputStyle}
             />
-            <p style={{ marginTop: 8, fontSize: 12, color: 'var(--color-text-muted)' }}>
-              Enter the absolute path to your OpenClaw installation directory.
+            <p style={{ marginTop: 8, fontSize: 12, color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
+              Enter the absolute path to your local OpenClaw installation folder. This is the
+              directory that contains a <code style={{ color: 'var(--color-primary)' }}>package.json</code>.
             </p>
+            {!path && (
+              <p style={{ marginTop: 12, fontSize: 12, color: 'var(--color-warning)' }}>
+                A path is required before we can install dependencies.
+              </p>
+            )}
           </div>
         )}
 
         {step === 3 && (
           <div>
             <h2 style={{ fontSize: 20, marginBottom: 16 }}>Install Dependencies</h2>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: 14, marginBottom: 16 }}>
-              We'll run <code style={{ color: 'var(--color-primary)' }}>npm install</code> in your OpenClaw directory.
+            <p style={{ color: 'var(--color-text-muted)', fontSize: 14, marginBottom: 16, lineHeight: 1.5 }}>
+              We will run <code style={{ color: 'var(--color-primary)' }}>npm install</code> inside
+              your OpenClaw directory to install required packages.
             </p>
             {!installResult && (
-              <button onClick={runInstall} disabled={installing || !path} style={btnPrimary}>
+              <button onClick={runInstall} disabled={installing || !path} style={{
+                ...btnPrimary,
+                opacity: installing || !path ? 0.5 : 1,
+                cursor: installing || !path ? 'not-allowed' : 'pointer',
+              }}>
                 {installing ? '⏳ Installing...' : '📦 Install Now'}
               </button>
             )}
-            {installResult === 'success' && (
-              <p style={{ color: 'var(--color-success)' }}>✅ Installation complete!</p>
+            {installResult?.ok && (
+              <div style={{
+                padding: '12px 16px',
+                background: 'rgba(45,212,160,0.08)',
+                border: '1px solid rgba(45,212,160,0.2)',
+                borderRadius: 'var(--radius-md)',
+                color: 'var(--color-success)',
+                fontSize: 14,
+              }}>
+                ✅ Installation complete! Moving to the final step...
+              </div>
             )}
-            {installResult && installResult !== 'success' && (
-              <p style={{ color: 'var(--color-error)' }}>❌ {installResult}</p>
+            {installResult && !installResult.ok && (
+              <div style={{
+                padding: '16px',
+                background: 'rgba(232,93,93,0.06)',
+                border: '1px solid rgba(232,93,93,0.2)',
+                borderRadius: 'var(--radius-md)',
+              }}>
+                <p style={{ color: 'var(--color-error)', fontWeight: 600, fontSize: 14, marginBottom: 8 }}>
+                  ❌ Installation failed
+                </p>
+                {installResult.explanation ? (
+                  <div style={{ fontSize: 13, lineHeight: 1.6 }}>
+                    <p style={{ color: 'var(--color-text)', marginBottom: 4 }}>
+                      <strong>What happened:</strong> {installResult.explanation.what}
+                    </p>
+                    <p style={{ color: 'var(--color-text-muted)', marginBottom: 4 }}>
+                      <strong>Likely cause:</strong> {installResult.explanation.cause}
+                    </p>
+                    <p style={{ color: 'var(--color-text-muted)', marginBottom: 12 }}>
+                      <strong>What to do:</strong> {installResult.explanation.action}
+                    </p>
+                  </div>
+                ) : (
+                  <p style={{ color: 'var(--color-error)', fontSize: 13 }}>{installResult.error}</p>
+                )}
+                {installResult.explanation?.retryable !== false && (
+                  <button onClick={() => { setInstallResult(null); runInstall() }} style={{
+                    ...btnPrimary,
+                    background: 'var(--color-warning)',
+                    fontSize: 13,
+                    padding: '8px 18px',
+                  }}>
+                    🔄 Retry
+                  </button>
+                )}
+              </div>
             )}
           </div>
         )}
@@ -177,14 +270,16 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
         {step === 4 && (
           <div>
             <div style={{ fontSize: 40, marginBottom: 16 }}>🎉</div>
-            <h2 style={{ fontSize: 20, marginBottom: 12 }}>Setup Complete!</h2>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: 14 }}>
-              OpenClaw Harbor is configured. Navigate to The Harbor to summon the emissary.
+            <h2 style={{ fontSize: 20, marginBottom: 12 }}>Setup Complete</h2>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: 14, lineHeight: 1.6 }}>
+              OpenClaw Harbor is configured and ready. Navigate to <strong>The Harbor</strong> to
+              summon the emissary, or head to <strong>Dispatch</strong> to send your first task.
             </p>
           </div>
         )}
       </div>
 
+      {/* Navigation */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 20 }}>
         <button
           onClick={() => setStep((s) => Math.max(0, s - 1))}
