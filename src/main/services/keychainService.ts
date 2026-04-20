@@ -51,7 +51,7 @@ export function setApiKey(key: string): { stored: boolean } {
   if (!key) {
     // Clear the stored key
     if (existsSync(keyPath)) {
-      try { unlinkSync(keyPath) } catch { /* best-effort */ }
+      try { unlinkSync(keyPath) } catch { /* ENOENT is expected if the file was already removed */ }
     }
     return { stored: true }
   }

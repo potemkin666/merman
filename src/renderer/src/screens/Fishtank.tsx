@@ -444,7 +444,8 @@ export const Fishtank: React.FC<FishtankProps> = ({ status, recentTasks = [], on
       if (directories.length > 0 && onWorkspacePathSet) {
         // Use the first dropped directory as the workspace path
         onWorkspacePathSet(directories[0].path)
-        setCatchMessage(`📂 Caught! Workspace set to ${directories[0].path.split('/').pop() || directories[0].path.split('\\').pop() || 'folder'}`)
+        const folderName = directories[0].path.replace(/[\\/]+$/, '').split(/[\\/]/).pop() || 'folder'
+        setCatchMessage(`📂 Caught! Workspace set to ${folderName}`)
         setSaying('*catches the folder expertly* Your new workspace, as commanded!')
         setSayingKey(k => k + 1)
       } else if (regularFiles.length > 0 && onFilesAttached) {

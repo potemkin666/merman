@@ -252,12 +252,14 @@ ipcMain.handle(IPC_CHANNELS.RESOLVE_DROPPED_PATHS, async (_event, paths: string[
   const results = paths.map((p) => {
     try {
       const stat = statSync(p)
-      return { path: p, isDirectory: stat.isDirectory() }
-    } catch {
-      return { path: p, isDirectory: false }
+      return { path: p, isDirectory: stat.isDirectory(), error: false }
+    } catch (err) {
+      // Path may be inaccessible (permissions) or non-existent
+      addLog('warning', `Could not stat dropped path: ${p} — ${err instanceof Error ? err.message : 'unknown error'}`)
+      return { path: p, isDirectory: false, error: true }
     }
   })
-  return results
+  return results.filter(r => !r.error)
 })
 
 // --- Terminal IPC Handlers ---
