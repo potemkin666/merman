@@ -3,6 +3,7 @@ import { NavSidebar } from './components/NavSidebar'
 import { Harbor } from './screens/Harbor'
 import { SetupWizard } from './screens/SetupWizard'
 import { Dispatch } from './screens/Dispatch'
+import { Fishtank } from './screens/Fishtank'
 import { TideLog } from './screens/TideLog'
 import { DeepConfig } from './screens/DeepConfig'
 import { useAppState } from './hooks/useAppState'
@@ -21,7 +22,7 @@ export default function App() {
         flexDirection: 'column',
         gap: 16,
       }}>
-        <div style={{ fontSize: 48 }}>🦞</div>
+        <div style={{ fontSize: 48 }}>🔱</div>
         <p style={{ color: 'var(--color-text-muted)' }}>Summoning the harbor...</p>
       </div>
     )
@@ -32,6 +33,7 @@ export default function App() {
       case 'harbor': return <Harbor config={config} status={status} recentTasks={recentTasks} onStatusChange={setStatus} />
       case 'setup': return <SetupWizard config={config} onSave={updateConfig} />
       case 'dispatch': return <Dispatch config={config} onTaskAdded={addTask} />
+      case 'fishtank': return <Fishtank status={status} />
       case 'tidelog': return <TideLog logs={logs} />
       case 'deepconfig': return <DeepConfig config={config} onSave={updateConfig} />
       default: return <Harbor config={config} status={status} recentTasks={recentTasks} onStatusChange={setStatus} />

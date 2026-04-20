@@ -10,6 +10,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'harbor', label: 'Harbor', icon: '🏠' },
   { id: 'setup', label: 'Setup', icon: '⚙️' },
   { id: 'dispatch', label: 'Dispatch', icon: '🔱' },
+  { id: 'fishtank', label: 'Fishtank', icon: '🐠' },
   { id: 'tidelog', label: 'Tide Log', icon: '🌊' },
   { id: 'deepconfig', label: 'Deep Config', icon: '🔧' },
 ]
@@ -33,7 +34,7 @@ export const NavSidebar: React.FC<NavSidebarProps> = ({ active, onNavigate }) =>
       gap: 4,
       flexShrink: 0,
     }}>
-      <div style={{ marginBottom: 24, fontSize: 24 }}>🦞</div>
+      <div style={{ marginBottom: 24, fontSize: 24 }}>🔱</div>
       {NAV_ITEMS.map((item) => (
         <button
           key={item.id}
