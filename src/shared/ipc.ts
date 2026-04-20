@@ -1,15 +1,28 @@
 export const IPC_CHANNELS = {
   CHECK_ENV: 'check-env',
+  DETECT_PATH: 'detect-path',
+  BROWSE_FOLDER: 'browse-folder',
   GET_CONFIG: 'get-config',
   SET_CONFIG: 'set-config',
+  GET_API_KEY: 'get-api-key',
+  SET_API_KEY: 'set-api-key',
+  GET_WELCOME_SEEN: 'get-welcome-seen',
+  SET_WELCOME_SEEN: 'set-welcome-seen',
   RUN_SETUP: 'run-setup',
   START_SERVICE: 'start-service',
   STOP_SERVICE: 'stop-service',
   RESTART_SERVICE: 'restart-service',
   DISPATCH_TASK: 'dispatch-task',
+  CANCEL_TASK: 'cancel-task',
   GET_LOGS: 'get-logs',
   ON_LOG: 'on-log',
   ON_STATUS_CHANGE: 'on-status-change',
+  TERMINAL_SPAWN: 'terminal-spawn',
+  TERMINAL_INPUT: 'terminal-input',
+  TERMINAL_RESIZE: 'terminal-resize',
+  TERMINAL_KILL: 'terminal-kill',
+  TERMINAL_OUTPUT: 'terminal-output',
+  TERMINAL_EXIT: 'terminal-exit',
 } as const
 
 export type IpcChannel = typeof IPC_CHANNELS[keyof typeof IPC_CHANNELS]

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useIpc } from '../hooks/useIpc'
 import { Tooltip } from '../components/Tooltip'
 import { HelpHint } from '../components/Tooltip'
@@ -24,6 +24,25 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
   const [mode, setMode] = useState('default')
   const [dispatching, setDispatching] = useState(false)
   const [result, setResult] = useState<CommandResult | null>(null)
+  const [elapsed, setElapsed] = useState(0)
+  const [cancelling, setCancelling] = useState(false)
+  const elapsedRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Elapsed time counter during dispatch
+  useEffect(() => {
+    if (dispatching) {
+      setElapsed(0)
+      elapsedRef.current = setInterval(() => setElapsed((s) => s + 1), 1000)
+    } else {
+      if (elapsedRef.current) {
+        clearInterval(elapsedRef.current)
+        elapsedRef.current = null
+      }
+    }
+    return () => {
+      if (elapsedRef.current) clearInterval(elapsedRef.current)
+    }
+  }, [dispatching])
 
   const allModes = [
     ...AGENT_MODES,
@@ -33,10 +52,21 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
   ]
 
   const getStatusCopy = () => {
-    if (dispatching) return '🌊 The emissary has been dispatched! He is working on it...'
+    if (cancelling) return '🛑 Cancelling the task...'
+    if (dispatching) return `🌊 The emissary has been dispatched! He is working on it... (${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')} elapsed)`
     if (result && !result.ok) return '⚠️ Something went wrong. Read the explanation below — it will tell you what to do.'
     if (result?.ok) return '🔱 The emissary has returned with results! Scroll down to see them.'
     return '🔱 Tell the emissary what you need. Type it in plain English below — no special format needed.'
+  }
+
+  const handleCancel = async () => {
+    setCancelling(true)
+    try {
+      await invoke(IPC_CHANNELS.CANCEL_TASK)
+    } catch {
+      // Best-effort cancel
+    }
+    setCancelling(false)
   }
 
   const handleDispatch = async () => {
@@ -116,6 +146,7 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="Describe the task for the emissary... For example: &quot;Write me a short email thanking my team for their hard work this week&quot;"
           rows={6}
+          aria-label="Task instruction for the emissary"
           style={{
             width: '100%',
             background: 'var(--color-surface)',
@@ -139,6 +170,7 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
             <select
               value={mode}
               onChange={(e) => setMode(e.target.value)}
+              aria-label="Agent mode"
               style={{
                 width: '100%',
                 background: 'var(--color-surface)',
@@ -160,6 +192,7 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
             <button
               onClick={handleDispatch}
               disabled={dispatching || !prompt.trim()}
+              aria-label={dispatching ? 'Dispatching task' : 'Dispatch task to emissary'}
               style={{
                 marginTop: 20,
                 padding: '10px 28px',
@@ -173,9 +206,33 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
                 whiteSpace: 'nowrap',
               }}
             >
-              {dispatching ? '⏳ Dispatching...' : '🔱 Dispatch Emissary'}
+              {dispatching ? `⏳ Dispatching... (${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')})` : '🔱 Dispatch Emissary'}
             </button>
           </Tooltip>
+          {dispatching && (
+            <Tooltip text="Cancel the current task. The emissary will return immediately.">
+              <button
+                onClick={handleCancel}
+                disabled={cancelling}
+                aria-label="Cancel the running task"
+                style={{
+                  marginTop: 20,
+                  marginLeft: 8,
+                  padding: '10px 20px',
+                  background: 'var(--color-error)',
+                  color: '#fff',
+                  borderRadius: 'var(--radius-md)',
+                  fontWeight: 600,
+                  fontSize: 14,
+                  cursor: cancelling ? 'wait' : 'pointer',
+                  whiteSpace: 'nowrap',
+                  opacity: cancelling ? 0.6 : 1,
+                }}
+              >
+                {cancelling ? '🛑 Cancelling...' : '🛑 Cancel'}
+              </button>
+            </Tooltip>
+          )}
         </div>
       </div>
 
@@ -250,6 +307,7 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
               <button
                 onClick={handleDispatch}
                 disabled={dispatching}
+                aria-label="Retry the failed task"
                 style={{
                   marginTop: 12,
                   padding: '8px 18px',

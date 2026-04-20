@@ -12,6 +12,9 @@ export const Modal: React.FC<ModalProps> = ({ open, title, onClose, children }) 
   return (
     <div
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
       style={{
         position: 'fixed',
         inset: 0,
@@ -40,9 +43,10 @@ export const Modal: React.FC<ModalProps> = ({ open, title, onClose, children }) 
           justifyContent: 'space-between',
           marginBottom: 20,
         }}>
-          <h2 style={{ color: 'var(--color-primary)', fontSize: 18 }}>{title}</h2>
+          <h2 id="modal-title" style={{ color: 'var(--color-primary)', fontSize: 18 }}>{title}</h2>
           <button
             onClick={onClose}
+            aria-label="Close dialog"
             style={{
               background: 'transparent',
               color: 'var(--color-text-muted)',

@@ -1,35 +1,53 @@
 import React, { useState, useEffect } from 'react'
 import { NavSidebar } from './components/NavSidebar'
 import { WelcomeOverlay } from './components/WelcomeOverlay'
+import { ElectronUnavailable } from './components/ElectronUnavailable'
 import { Harbor } from './screens/Harbor'
 import { SetupWizard } from './screens/SetupWizard'
 import { Dispatch } from './screens/Dispatch'
 import { Fishtank } from './screens/Fishtank'
+import { DeepDive } from './screens/DeepDive'
 import { TideLog } from './screens/TideLog'
 import { DeepConfig } from './screens/DeepConfig'
-import { useAppState } from './hooks/useAppState'
+import { ConfigProvider, useConfig } from './hooks/useConfig'
+import { LogsProvider, useLogs } from './hooks/useLogs'
+import { ServiceProvider, useService } from './hooks/useService'
+import { TasksProvider, useTasks } from './hooks/useTasks'
+import { isElectronAvailable, useIpc } from './hooks/useIpc'
+import { IPC_CHANNELS } from '../../shared/ipc'
 
-const WELCOME_KEY = 'openclaw-harbor-welcome-seen'
-
-export default function App() {
+function AppContent() {
   const [page, setPage] = useState('harbor')
-  const { config, logs, status, recentTasks, loading, updateConfig, addTask, setStatus } = useAppState()
+  const { config, loading, updateConfig } = useConfig()
+  const { logs } = useLogs()
+  const { status, setStatus } = useService()
+  const { recentTasks, addTask } = useTasks()
+  const { invoke } = useIpc()
   const [showWelcome, setShowWelcome] = useState(false)
 
   useEffect(() => {
-    if (!loading && !localStorage.getItem(WELCOME_KEY)) {
-      setShowWelcome(true)
+    if (!loading) {
+      invoke<boolean>(IPC_CHANNELS.GET_WELCOME_SEEN).then((seen) => {
+        if (!seen) setShowWelcome(true)
+      }).catch(() => {
+        // Fallback: if IPC fails, don't show welcome
+      })
     }
-  }, [loading])
+  }, [loading, invoke])
 
   const dismissWelcome = () => {
     setShowWelcome(false)
-    localStorage.setItem(WELCOME_KEY, 'true')
+    invoke(IPC_CHANNELS.SET_WELCOME_SEEN).catch(() => {
+      // Best-effort persist
+    })
   }
 
   if (loading) {
     return (
-      <div style={{
+      <div
+        role="status"
+        aria-label="Loading OpenClaw Harbour"
+        style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -38,9 +56,9 @@ export default function App() {
         gap: 16,
         background: 'var(--color-bg)',
       }}>
-        <div style={{ fontSize: 56, animation: 'emissaryFloat 3s ease-in-out infinite' }}>🔱</div>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: 15 }}>Summoning the harbor...</p>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: 12, opacity: 0.6 }}>This should only take a moment</p>
+        <div style={{ fontSize: 56, animation: 'emissaryFloat 3s ease-in-out infinite' }} aria-hidden="true">🔱</div>
+        <p style={{ color: 'var(--color-primary)', fontSize: 18, fontWeight: 600 }}>OpenClaw Harbour</p>
+        <p style={{ color: 'var(--color-text-muted)', fontSize: 14 }}>Your merman emissary awaits.</p>
       </div>
     )
   }
@@ -50,7 +68,8 @@ export default function App() {
       case 'harbor': return <Harbor config={config} status={status} recentTasks={recentTasks} onStatusChange={setStatus} onNavigate={setPage} />
       case 'setup': return <SetupWizard config={config} onSave={updateConfig} />
       case 'dispatch': return <Dispatch config={config} onTaskAdded={addTask} />
-      case 'fishtank': return <Fishtank status={status} />
+      case 'fishtank': return <Fishtank status={status} recentTasks={recentTasks} />
+      case 'deepdive': return <DeepDive config={config} />
       case 'tidelog': return <TideLog logs={logs} />
       case 'deepconfig': return <DeepConfig config={config} onSave={updateConfig} />
       default: return <Harbor config={config} status={status} recentTasks={recentTasks} onStatusChange={setStatus} onNavigate={setPage} />
@@ -69,5 +88,26 @@ export default function App() {
         {renderScreen()}
       </main>
     </div>
+  )
+}
+
+export default function App() {
+  const electronAvailable = isElectronAvailable()
+
+  // If the Electron bridge is not available, show a helpful error screen
+  if (!electronAvailable) {
+    return <ElectronUnavailable />
+  }
+
+  return (
+    <ConfigProvider>
+      <LogsProvider>
+        <ServiceProvider>
+          <TasksProvider>
+            <AppContent />
+          </TasksProvider>
+        </ServiceProvider>
+      </LogsProvider>
+    </ConfigProvider>
   )
 }

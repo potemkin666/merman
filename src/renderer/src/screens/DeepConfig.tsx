@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { Tooltip } from '../components/Tooltip'
 import { HelpHint } from '../components/Tooltip'
+import { useIpc } from '../hooks/useIpc'
+import { IPC_CHANNELS } from '../../../shared/ipc'
 import type { AppConfig, Preset } from '../../../shared/types'
 
 interface DeepConfigProps {
@@ -28,16 +30,48 @@ const labelStyle: React.CSSProperties = {
 }
 
 export const DeepConfig: React.FC<DeepConfigProps> = ({ config, onSave }) => {
+  const { invoke } = useIpc()
   const [form, setForm] = useState(config)
+  const [apiKey, setApiKeyState] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [newPreset, setNewPreset] = useState({ name: '', mode: '' })
+  const [detecting, setDetecting] = useState(false)
 
   useEffect(() => { setForm(config) }, [config])
 
+  // Load API key from secure storage on mount
+  useEffect(() => {
+    invoke<string>(IPC_CHANNELS.GET_API_KEY).then((key) => {
+      if (key) setApiKeyState(key)
+    }).catch(() => {
+      // Secure storage may not be available; key field starts empty
+    })
+  }, [invoke])
+
+  const handleAutoDetect = async () => {
+    setDetecting(true)
+    try {
+      const detected = await invoke<string>(IPC_CHANNELS.DETECT_PATH)
+      if (detected) {
+        setForm((f) => ({ ...f, openClawPath: detected }))
+      }
+    } catch {
+      // Detection failed silently
+    } finally {
+      setDetecting(false)
+    }
+  }
+
   const handleSave = async () => {
     setSaving(true)
+    // Save config (without apiKey) and save apiKey separately via secure storage
     await onSave(form)
+    try {
+      await invoke(IPC_CHANNELS.SET_API_KEY, apiKey)
+    } catch {
+      // safeStorage might not be available; key will not persist
+    }
     setSaving(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
@@ -98,7 +132,49 @@ export const DeepConfig: React.FC<DeepConfigProps> = ({ config, onSave }) => {
             </label>
             <input type="text" value={form.openClawPath}
               onChange={(e) => setForm((f) => ({ ...f, openClawPath: e.target.value }))}
-              placeholder="/path/to/openclaw" style={inputStyle} />
+              placeholder="/path/to/openclaw" aria-label="OpenClaw installation path" style={inputStyle} />
+            <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+              <Tooltip text="Open a folder picker to select the OpenClaw directory. Easier than typing!">
+                <button
+                  onClick={async () => {
+                    const selected = await invoke<string>(IPC_CHANNELS.BROWSE_FOLDER)
+                    if (selected) setForm((f) => ({ ...f, openClawPath: selected }))
+                  }}
+                  aria-label="Browse for OpenClaw directory"
+                  style={{
+                    padding: '6px 14px',
+                    background: 'rgba(0,200,212,0.1)',
+                    color: 'var(--color-primary)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                  }}
+                >
+                  📁 Browse…
+                </button>
+              </Tooltip>
+              <Tooltip text="Scan common folders on your computer to find an OpenClaw installation automatically.">
+                <button
+                  onClick={handleAutoDetect}
+                  disabled={detecting}
+                  aria-label={detecting ? 'Scanning for OpenClaw' : 'Auto-detect OpenClaw path'}
+                  style={{
+                    padding: '6px 14px',
+                    background: 'rgba(0,200,212,0.1)',
+                    color: 'var(--color-primary)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    cursor: detecting ? 'wait' : 'pointer',
+                  }}
+                >
+                  {detecting ? '⏳ Scanning...' : '🔍 Auto-detect'}
+                </button>
+              </Tooltip>
+            </div>
           </div>
           <div>
             <label style={labelStyle}>
@@ -107,7 +183,30 @@ export const DeepConfig: React.FC<DeepConfigProps> = ({ config, onSave }) => {
             </label>
             <input type="text" value={form.workspacePath}
               onChange={(e) => setForm((f) => ({ ...f, workspacePath: e.target.value }))}
-              placeholder="/path/to/workspace (optional)" style={inputStyle} />
+              placeholder="/path/to/workspace (optional)" aria-label="Workspace path" style={inputStyle} />
+            <div style={{ marginTop: 6 }}>
+              <Tooltip text="Open a folder picker to select a workspace directory.">
+                <button
+                  onClick={async () => {
+                    const selected = await invoke<string>(IPC_CHANNELS.BROWSE_FOLDER)
+                    if (selected) setForm((f) => ({ ...f, workspacePath: selected }))
+                  }}
+                  aria-label="Browse for workspace directory"
+                  style={{
+                    padding: '6px 14px',
+                    background: 'rgba(0,200,212,0.1)',
+                    color: 'var(--color-primary)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                  }}
+                >
+                  📁 Browse…
+                </button>
+              </Tooltip>
+            </div>
           </div>
         </div>
       </section>
@@ -124,7 +223,7 @@ export const DeepConfig: React.FC<DeepConfigProps> = ({ config, onSave }) => {
             </label>
             <input type="text" value={form.provider}
               onChange={(e) => setForm((f) => ({ ...f, provider: e.target.value }))}
-              placeholder="openai" style={inputStyle} />
+              placeholder="openai" aria-label="AI provider" style={inputStyle} />
           </div>
           <div>
             <label style={labelStyle}>
@@ -133,7 +232,7 @@ export const DeepConfig: React.FC<DeepConfigProps> = ({ config, onSave }) => {
             </label>
             <input type="text" value={form.model}
               onChange={(e) => setForm((f) => ({ ...f, model: e.target.value }))}
-              placeholder="gpt-4o" style={inputStyle} />
+              placeholder="gpt-4o" aria-label="AI model" style={inputStyle} />
           </div>
         </div>
         <div style={{ marginTop: 16 }}>
@@ -141,11 +240,11 @@ export const DeepConfig: React.FC<DeepConfigProps> = ({ config, onSave }) => {
             API Key
             <HelpHint text="A secret key from your AI provider that lets the agent talk to the AI service. Get one from platform.openai.com (for OpenAI) or console.anthropic.com (for Anthropic). It starts with 'sk-'. Keep it private!" />
           </label>
-          <input type="password" value={form.apiKey}
-            onChange={(e) => setForm((f) => ({ ...f, apiKey: e.target.value }))}
-            placeholder="sk-..." style={inputStyle} />
+          <input type="password" value={apiKey}
+            onChange={(e) => setApiKeyState(e.target.value)}
+            placeholder="sk-..." aria-label="API key" style={inputStyle} />
           <p style={{ marginTop: 6, fontSize: 11, color: 'var(--color-text-muted)' }}>
-            🔒 This key is stored locally on your computer only. It is never sent anywhere except to the AI provider you chose.
+            🔒 This key is stored securely using your operating system&apos;s keychain. It is never saved as plain text.
           </p>
         </div>
       </section>
@@ -169,7 +268,7 @@ export const DeepConfig: React.FC<DeepConfigProps> = ({ config, onSave }) => {
               <span style={{ flex: 1, fontSize: 14 }}>{p.name}</span>
               <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{p.mode}</span>
               <Tooltip text="Remove this preset from your list.">
-                <button onClick={() => removePreset(p.id)} style={{
+                <button onClick={() => removePreset(p.id)} aria-label={`Remove preset ${p.name}`} style={{
                   background: 'transparent',
                   color: 'var(--color-error)',
                   fontSize: 16,
@@ -182,12 +281,12 @@ export const DeepConfig: React.FC<DeepConfigProps> = ({ config, onSave }) => {
         <div style={{ display: 'flex', gap: 8 }}>
           <input type="text" value={newPreset.name}
             onChange={(e) => setNewPreset((p) => ({ ...p, name: e.target.value }))}
-            placeholder="Preset name" style={{ ...inputStyle, flex: 1 }} />
+            placeholder="Preset name" aria-label="New preset name" style={{ ...inputStyle, flex: 1 }} />
           <input type="text" value={newPreset.mode}
             onChange={(e) => setNewPreset((p) => ({ ...p, mode: e.target.value }))}
-            placeholder="Mode key" style={{ ...inputStyle, flex: 1 }} />
+            placeholder="Mode key" aria-label="New preset mode key" style={{ ...inputStyle, flex: 1 }} />
           <Tooltip text="Add a new custom preset. Enter a name and a mode key (like 'code' or 'research'), then click +.">
-            <button onClick={addPreset} style={{
+            <button onClick={addPreset} aria-label="Add new preset" style={{
               padding: '10px 16px',
               background: 'var(--color-secondary)',
               color: 'var(--color-text)',
@@ -204,7 +303,7 @@ export const DeepConfig: React.FC<DeepConfigProps> = ({ config, onSave }) => {
       </section>
 
       <Tooltip text="Save all the settings you have changed. They will be remembered next time you open the app.">
-        <button onClick={handleSave} disabled={saving} style={{
+        <button onClick={handleSave} disabled={saving} aria-label={saving ? 'Saving configuration' : saved ? 'Configuration saved' : 'Save configuration'} style={{
           padding: '12px 32px',
           background: saved ? 'var(--color-success)' : 'var(--color-primary)',
           color: '#0a0f1e',

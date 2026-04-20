@@ -1,9 +1,9 @@
-import React, { useState } from 'react'
-import { useIpc } from '../hooks/useIpc'
+import React, { useState, useEffect, useRef } from 'react'
+import { useIpc, useIpcListener } from '../hooks/useIpc'
 import { Tooltip } from '../components/Tooltip'
 import { HelpHint } from '../components/Tooltip'
 import { IPC_CHANNELS } from '../../../shared/ipc'
-import type { EnvCheckResult, AppConfig, CommandResult } from '../../../shared/types'
+import type { EnvCheckResult, AppConfig, CommandResult, LogEntry } from '../../../shared/types'
 
 interface SetupWizardProps {
   config: AppConfig
@@ -42,6 +42,33 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
   const [path, setPath] = useState(config.openClawPath)
   const [installing, setInstalling] = useState(false)
   const [installResult, setInstallResult] = useState<CommandResult | null>(null)
+  const [installLogs, setInstallLogs] = useState<string[]>([])
+  const [elapsed, setElapsed] = useState(0)
+  const logBottomRef = useRef<HTMLDivElement>(null)
+
+  const MAX_INSTALL_LOG_LINES = 200
+
+  // Stream ON_LOG events into the install mini-log while installing
+  useIpcListener(IPC_CHANNELS.ON_LOG, (...args: unknown[]) => {
+    if (!installing) return
+    const entry = args[0] as LogEntry
+    if (entry?.message) {
+      setInstallLogs((prev) => [...prev.slice(-MAX_INSTALL_LOG_LINES), entry.message.trim()])
+    }
+  }, [installing])
+
+  // Elapsed time counter during install
+  useEffect(() => {
+    if (!installing) return
+    setElapsed(0)
+    const t = setInterval(() => setElapsed((s) => s + 1), 1000)
+    return () => clearInterval(t)
+  }, [installing])
+
+  // Auto-scroll install log to bottom
+  useEffect(() => {
+    logBottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [installLogs])
 
   const checkPrereqs = async () => {
     setChecking(true)
@@ -52,9 +79,30 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
 
   const allPrereqsOk = envResults.length > 0 && envResults.every((r) => r.ok)
 
+  // Auto-run prereq checks when entering step 1
+  const prereqsTriggered = React.useRef(false)
+  useEffect(() => {
+    if (step === 1 && !prereqsTriggered.current && envResults.length === 0 && !checking) {
+      prereqsTriggered.current = true
+      checkPrereqs()
+    }
+  }, [step, envResults.length, checking])
+
+  // Auto-detect OpenClaw path when entering step 2
+  const detectTriggered = React.useRef(false)
+  useEffect(() => {
+    if (step === 2 && !detectTriggered.current && !path) {
+      detectTriggered.current = true
+      invoke<string>(IPC_CHANNELS.DETECT_PATH).then((detected) => {
+        if (detected) setPath(detected)
+      })
+    }
+  }, [step, path, invoke])
+
   const runInstall = async () => {
     setInstalling(true)
     setInstallResult(null)
+    setInstallLogs([])
     await onSave({ openClawPath: path })
     const result = await invoke<CommandResult>(IPC_CHANNELS.RUN_SETUP, path)
     setInstallResult(result)
@@ -95,7 +143,13 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
             </Tooltip>
           ))}
         </div>
-        <div style={{ height: 4, background: 'var(--color-surface)', borderRadius: 2 }}>
+        <div style={{ height: 4, background: 'var(--color-surface)', borderRadius: 2 }}
+          role="progressbar"
+          aria-valuenow={step}
+          aria-valuemin={0}
+          aria-valuemax={STEPS.length - 1}
+          aria-label={`Setup progress: step ${step + 1} of ${STEPS.length}`}
+        >
           <div style={{
             height: '100%',
             width: `${progress}%`,
@@ -118,7 +172,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
         {step === 0 && (
           <div>
             <div style={{ fontSize: 40, marginBottom: 16 }}>🔱</div>
-            <h2 style={{ fontSize: 20, marginBottom: 12 }}>Welcome to OpenClaw Harbor</h2>
+            <h2 style={{ fontSize: 20, marginBottom: 12 }}>Welcome to OpenClaw Harbour</h2>
             <p style={{ color: 'var(--color-text-muted)', fontSize: 14, lineHeight: 1.8 }}>
               This wizard will prepare your computer for OpenClaw in just a few steps.
             </p>
@@ -149,7 +203,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
               If anything is missing, we will tell you exactly how to fix it.
             </p>
             <Tooltip text="Click this to scan your system. It checks for Node.js (runs JavaScript), npm (installs packages), and git (version control). Takes about 2 seconds.">
-              <button onClick={checkPrereqs} disabled={checking} style={btnPrimary}>
+              <button onClick={checkPrereqs} disabled={checking} aria-label={checking ? 'Checking prerequisites' : 'Run prerequisite checks'} style={btnPrimary}>
                 {checking ? '⏳ Checking...' : '🔍 Run Checks'}
               </button>
             </Tooltip>
@@ -232,8 +286,32 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
               value={path}
               onChange={(e) => setPath(e.target.value)}
               placeholder="/path/to/openclaw"
+              aria-label="OpenClaw directory path"
               style={inputStyle}
             />
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <Tooltip text="Open a folder picker to select the OpenClaw directory. Easier than typing!">
+                <button
+                  onClick={async () => {
+                    const selected = await invoke<string>(IPC_CHANNELS.BROWSE_FOLDER)
+                    if (selected) setPath(selected)
+                  }}
+                  aria-label="Browse for OpenClaw directory"
+                  style={{
+                    padding: '6px 14px',
+                    background: 'rgba(0,200,212,0.1)',
+                    color: 'var(--color-primary)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                  }}
+                >
+                  📁 Browse…
+                </button>
+              </Tooltip>
+            </div>
             <div style={{ marginTop: 12, padding: '12px 16px', background: 'rgba(0,200,212,0.05)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(0,200,212,0.1)' }}>
               <p style={{ fontSize: 12, color: 'var(--color-text-muted)', lineHeight: 1.7 }}>
                 <strong style={{ color: 'var(--color-text)' }}>💡 How to find this path:</strong><br />
@@ -260,17 +338,59 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
               Almost there! We will install the packages OpenClaw needs. Just click the button below and wait.
               This might take a minute or two depending on your internet speed.
             </p>
-            {!installResult && (
+            {!installResult && !installing && (
               <Tooltip text={!path ? 'Go back and set the OpenClaw path first.' : 'Click to download and install all required packages. This runs npm install inside your OpenClaw folder.'}>
-                <button onClick={runInstall} disabled={installing || !path} style={{
+                <button onClick={runInstall} disabled={installing || !path} aria-label={installing ? 'Installing dependencies' : 'Install dependencies now'} style={{
                   ...btnPrimary,
                   opacity: installing || !path ? 0.5 : 1,
                   cursor: installing || !path ? 'not-allowed' : 'pointer',
                 }}>
-                  {installing ? '⏳ Installing... (this may take a minute)' : '📦 Install Now'}
+                  📦 Install Now
                 </button>
               </Tooltip>
             )}
+
+            {/* Live install progress */}
+            {installing && (
+              <div style={{ marginTop: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                  <span style={{ fontSize: 18, animation: 'pulse 1.5s infinite' }}>⏳</span>
+                  <span style={{ fontSize: 14, color: 'var(--color-primary)', fontWeight: 600 }}>
+                    Installing... ({Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, '0')} elapsed)
+                  </span>
+                </div>
+                <div
+                  role="log"
+                  aria-label="Install output"
+                  aria-live="polite"
+                  style={{
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: 10,
+                    maxHeight: 160,
+                    overflowY: 'auto',
+                    fontFamily: 'monospace',
+                    fontSize: 11,
+                    lineHeight: 1.5,
+                    color: 'var(--color-text-muted)',
+                  }}
+                >
+                  {installLogs.length === 0 ? (
+                    <span style={{ opacity: 0.5 }}>Waiting for output...</span>
+                  ) : (
+                    installLogs.map((line, i) => (
+                      <div key={i} style={{ wordBreak: 'break-all' }}>{line}</div>
+                    ))
+                  )}
+                  <div ref={logBottomRef} />
+                </div>
+                <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 8, opacity: 0.7 }}>
+                  💡 This output is the same as what you would see in a terminal. It is normal to see warnings.
+                </p>
+              </div>
+            )}
+
             {installResult?.ok && (
               <div style={{
                 padding: '12px 16px',
@@ -310,7 +430,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
                 )}
                 {installResult.explanation?.retryable !== false && (
                   <Tooltip text="Try the installation again. Sometimes things fail due to temporary network issues.">
-                    <button onClick={() => { setInstallResult(null); runInstall() }} style={{
+                    <button onClick={() => { setInstallResult(null); runInstall() }} aria-label="Retry installation" style={{
                       ...btnPrimary,
                       background: 'var(--color-warning)',
                       fontSize: 13,
@@ -333,7 +453,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
               You are all set! Here is what to do next:
             </p>
             <ol style={{ paddingLeft: 20, fontSize: 14, color: 'var(--color-text-muted)', lineHeight: 2.2, marginTop: 12 }}>
-              <li>Go to <strong style={{ color: 'var(--color-primary)' }}>The Harbor</strong> and click <strong style={{ color: 'var(--color-primary)' }}>Summon</strong> to start the service</li>
+              <li>Go to <strong style={{ color: 'var(--color-primary)' }}>The Harbour</strong> and click <strong style={{ color: 'var(--color-primary)' }}>Summon</strong> to start the service</li>
               <li>Go to <strong style={{ color: 'var(--color-primary)' }}>Dispatch</strong> and type your first task</li>
               <li>Check the <strong style={{ color: 'var(--color-primary)' }}>Fishtank</strong> to watch the emissary work!</li>
             </ol>
@@ -350,6 +470,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
           <button
             onClick={() => setStep((s) => Math.max(0, s - 1))}
             disabled={step === 0}
+            aria-label="Go to previous step"
             style={{
               padding: '10px 24px',
               background: 'transparent',
@@ -366,7 +487,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
         </Tooltip>
         {step < STEPS.length - 1 && (
           <Tooltip text="Continue to the next step.">
-            <button onClick={() => setStep((s) => s + 1)} style={btnPrimary}>
+            <button onClick={() => setStep((s) => s + 1)} aria-label="Go to next step" style={btnPrimary}>
               Next →
             </button>
           </Tooltip>

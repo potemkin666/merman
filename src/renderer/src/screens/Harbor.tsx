@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { StatusCard } from '../components/StatusCard'
+import { BottleGrid } from '../components/BottleGrid'
 import { Tooltip } from '../components/Tooltip'
 import { HelpHint } from '../components/Tooltip'
 import type { AppConfig, ServiceStatus, TaskResult, EnvCheckResult } from '../../../shared/types'
@@ -65,12 +66,14 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
 
   return (
     <div style={{ padding: 32, maxWidth: 900, margin: '0 auto' }}>
-      <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--color-primary)', marginBottom: 8 }}>
-        The Harbor
-      </h1>
-      <p style={{ color: 'var(--color-text-muted)', marginBottom: 24, fontSize: 14 }}>
-        {statusCopy}
-      </p>
+      <header>
+        <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--color-primary)', marginBottom: 8 }}>
+          The Harbour
+        </h1>
+        <p style={{ color: 'var(--color-text-muted)', marginBottom: 24, fontSize: 14 }}>
+          {statusCopy}
+        </p>
+      </header>
 
       {/* First-time nudge */}
       {needsSetup && (
@@ -97,6 +100,7 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
           <Tooltip text="Opens the Setup Wizard — a friendly step-by-step guide to get everything ready.">
             <button
               onClick={() => onNavigate('setup')}
+              aria-label="Start setup wizard"
               style={{
                 ...btnBase,
                 background: 'var(--color-primary)',
@@ -145,10 +149,10 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
             Environment Health
             <HelpHint text="These checks tell you if your computer has everything it needs to run OpenClaw. Green = good. Red = needs attention. Click Setup in the sidebar to fix issues." />
           </h3>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }} role="list" aria-label="Environment check results">
             {envResults.map((r) => (
               <Tooltip key={r.name} text={r.ok ? `${r.name} is installed and working${r.version ? ` (v${r.version})` : ''}.` : (r.message || `${r.name} needs attention.`)} position="bottom">
-                <span style={{
+                <span role="listitem" style={{
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 6,
@@ -166,18 +170,19 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
           </div>
           {!allOk && (
             <p style={{ marginTop: 10, fontSize: 12, color: 'var(--color-warning)' }}>
-              {failCount} {failCount === 1 ? 'check' : 'checks'} not passing. Open <button onClick={() => onNavigate('setup')} style={{ background: 'none', color: 'var(--color-primary)', textDecoration: 'underline', fontSize: 12, cursor: 'pointer' }}>Setup</button> to resolve.
+              {failCount} {failCount === 1 ? 'check' : 'checks'} not passing. Open <button onClick={() => onNavigate('setup')} aria-label="Open setup wizard to resolve issues" style={{ background: 'none', color: 'var(--color-primary)', textDecoration: 'underline', fontSize: 12, cursor: 'pointer' }}>Setup</button> to resolve.
             </p>
           )}
         </div>
       )}
 
       {/* Quick Actions */}
-      <div style={{ display: 'flex', gap: 12, marginTop: 24, marginBottom: 32, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 12, marginTop: 24, marginBottom: 32, flexWrap: 'wrap' }} role="group" aria-label="Service controls">
         <Tooltip text="Start the OpenClaw service. This boots up the AI agent so it can receive tasks. Think of it like turning on the engine.">
           <button
             onClick={handleSummon}
             disabled={isRunning}
+            aria-label="Summon — start the OpenClaw service"
             style={{
               ...btnBase,
               background: isRunning ? 'rgba(0,200,212,0.2)' : 'var(--color-primary)',
@@ -192,6 +197,7 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
           <button
             onClick={handleStop}
             disabled={!isRunning}
+            aria-label="Stop the OpenClaw service"
             style={{
               ...btnBase,
               background: !isRunning ? 'transparent' : 'rgba(232, 93, 93, 0.15)',
@@ -206,6 +212,7 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
           <button
             onClick={handleRestart}
             disabled={!isRunning}
+            aria-label="Restart the OpenClaw service"
             style={{
               ...btnBase,
               background: !isRunning ? 'transparent' : 'rgba(0,200,212,0.1)',
@@ -219,8 +226,8 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
       </div>
 
       <h2 style={{ fontSize: 16, fontWeight: 600, color: 'var(--color-text)', marginBottom: 16, display: 'flex', alignItems: 'center' }}>
-        Recent Dispatches
-        <HelpHint text="These are tasks you have sent to the emissary recently. 'Returned' means it worked. 'Lost' means something went wrong — check the Tide Log for details." />
+        Messages in Bottles
+        <HelpHint text="These are tasks you have sent to the emissary. Each bottle holds a past dispatch. Click one to uncork it and read the results. Cracked bottles mean something went wrong." />
       </h2>
       {recentTasks.length === 0 ? (
         <div style={{
@@ -233,43 +240,10 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
           fontSize: 14,
           lineHeight: 1.6,
         }}>
-          No dispatches yet. Head to <button onClick={() => onNavigate('dispatch')} style={{ background: 'none', color: 'var(--color-primary)', textDecoration: 'underline', fontSize: 14, cursor: 'pointer' }}>Dispatch</button> to send your first task!
+          No bottles yet. Head to <button onClick={() => onNavigate('dispatch')} aria-label="Navigate to Dispatch screen" style={{ background: 'none', color: 'var(--color-primary)', textDecoration: 'underline', fontSize: 14, cursor: 'pointer' }}>Dispatch</button> to send your first message into the deep!
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {recentTasks.slice(0, 8).map((task) => (
-            <div key={task.id} style={{
-              background: 'var(--color-panel)',
-              border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-md)',
-              padding: '12px 16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-            }}>
-              <Tooltip text={task.status === 'done' ? 'This task completed successfully.' : task.status === 'error' ? 'This task failed — check Tide Log for details.' : 'This task is still in progress.'}>
-                <span style={{
-                  fontSize: 11,
-                  padding: '2px 8px',
-                  borderRadius: 'var(--radius-sm)',
-                  background: task.status === 'done' ? 'rgba(45,212,160,0.15)' :
-                    task.status === 'error' ? 'rgba(232,93,93,0.15)' : 'rgba(0,200,212,0.15)',
-                  color: task.status === 'done' ? 'var(--color-success)' :
-                    task.status === 'error' ? 'var(--color-error)' : 'var(--color-primary)',
-                  fontWeight: 600,
-                }}>
-                  {task.status === 'done' ? 'returned' : task.status === 'error' ? 'lost' : task.status}
-                </span>
-              </Tooltip>
-              <span style={{ flex: 1, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {task.prompt}
-              </span>
-              <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
-                {new Date(task.startedAt).toLocaleTimeString()}
-              </span>
-            </div>
-          ))}
-        </div>
+        <BottleGrid tasks={recentTasks} />
       )}
     </div>
   )

@@ -1,4 +1,6 @@
 import { spawn, ChildProcess } from 'child_process'
+import { existsSync } from 'fs'
+import { resolve, isAbsolute } from 'path'
 import type { BrowserWindow } from 'electron'
 import { IPC_CHANNELS } from '../../shared/ipc'
 import type { LogEntry } from '../../shared/types'
@@ -16,9 +18,36 @@ function makeLog(level: LogEntry['level'], message: string): LogEntry {
 }
 
 /**
+ * Validate that a path is safe to use as a cwd for spawned processes.
+ * Rejects paths containing shell metacharacters that could be dangerous.
+ */
+export function validatePath(path: string): { ok: boolean; error?: string } {
+  if (!path || !path.trim()) {
+    return { ok: false, error: 'Path is empty.' }
+  }
+
+  // Reject shell metacharacters and command separators
+  const shellMetacharactersPattern = /[;|&`$(){}[\]!<>*?\n\r]/
+  if (shellMetacharactersPattern.test(path)) {
+    return { ok: false, error: 'Path contains invalid characters. Please use a simple directory path.' }
+  }
+
+  // Resolve to absolute and ensure it exists
+  const resolved = isAbsolute(path) ? path : resolve(path)
+  if (!existsSync(resolved)) {
+    return { ok: false, error: `Directory not found: ${resolved}` }
+  }
+
+  return { ok: true }
+}
+
+/**
  * Spawn a command and stream output to the renderer.
  * Returns the ChildProcess when used as a fire-and-forget (onExit supplied).
  * Returns a Promise<string> when awaited.
+ *
+ * shell: false — arguments are passed directly to the executable, preventing
+ * shell metacharacter injection via the cwd or args.
  */
 export function runCommand(
   cmd: string,
@@ -27,7 +56,7 @@ export function runCommand(
   win: BrowserWindow | null,
   onExit?: (proc: ChildProcess) => void
 ): ChildProcess & Promise<string> {
-  const proc = spawn(cmd, args, { cwd, shell: true })
+  const proc = spawn(cmd, args, { cwd, shell: false })
   const output: string[] = []
 
   proc.stdout.on('data', (data: Buffer) => {

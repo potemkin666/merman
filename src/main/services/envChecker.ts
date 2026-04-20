@@ -1,21 +1,26 @@
-import { execSync } from 'child_process'
+import { execFile } from 'child_process'
 import { existsSync } from 'fs'
 import { join } from 'path'
 import type { EnvCheckResult } from '../../shared/types'
 import { getConfig } from './configService'
 
-function checkCommand(name: string, cmd: string, versionFlag = '--version'): EnvCheckResult {
-  try {
-    const out = execSync(`${cmd} ${versionFlag}`, { encoding: 'utf8', timeout: 5000 }).trim()
-    const version = out.split('\n')[0].replace(/^v/, '')
-    return { name, version, ok: true }
-  } catch {
-    return {
-      name,
-      ok: false,
-      message: `${name} not found. Install it and make sure it is available in your PATH.`,
-    }
+function checkCommand(name: string, cmd: string, versionFlag = '--version'): Promise<EnvCheckResult> {
+  const notFoundResult: EnvCheckResult = {
+    name,
+    ok: false,
+    message: `${name} not found. Install it and make sure it is available in your PATH.`,
   }
+  return new Promise((resolve) => {
+    const child = execFile(cmd, [versionFlag], { encoding: 'utf8', timeout: 5000 }, (err, stdout) => {
+      if (err) {
+        resolve(notFoundResult)
+      } else {
+        const version = stdout.trim().split('\n')[0].replace(/^v/, '')
+        resolve({ name, version, ok: true })
+      }
+    })
+    child.on('error', () => resolve(notFoundResult))
+  })
 }
 
 function checkOpenClawDir(): EnvCheckResult {
@@ -82,11 +87,51 @@ function checkOpenClawConfig(): EnvCheckResult {
 }
 
 export async function checkEnvironment(): Promise<EnvCheckResult[]> {
-  return [
+  const [nodeResult, npmResult, gitResult] = await Promise.all([
     checkCommand('Node.js', 'node'),
     checkCommand('npm', 'npm'),
     checkCommand('git', 'git'),
+  ])
+  return [
+    nodeResult,
+    npmResult,
+    gitResult,
     checkOpenClawDir(),
     checkOpenClawConfig(),
   ]
+}
+
+/**
+ * Search common locations for an OpenClaw installation directory.
+ * Returns the first path that contains a package.json, or empty string.
+ */
+export function detectOpenClawPath(): string {
+  const home = process.env.HOME || process.env.USERPROFILE || ''
+  if (!home) return ''
+
+  const candidates = [
+    join(home, 'openclaw'),
+    join(home, 'OpenClaw'),
+    join(home, 'projects', 'openclaw'),
+    join(home, 'projects', 'OpenClaw'),
+    join(home, 'Documents', 'openclaw'),
+    join(home, 'Documents', 'OpenClaw'),
+    join(home, 'Desktop', 'openclaw'),
+    join(home, 'Desktop', 'OpenClaw'),
+    join(home, 'dev', 'openclaw'),
+    join(home, 'dev', 'OpenClaw'),
+    join(home, 'src', 'openclaw'),
+    join(home, 'src', 'OpenClaw'),
+    join(home, 'code', 'openclaw'),
+    join(home, 'code', 'OpenClaw'),
+    join(home, 'repos', 'openclaw'),
+    join(home, 'repos', 'OpenClaw'),
+  ]
+
+  for (const dir of candidates) {
+    if (existsSync(dir) && existsSync(join(dir, 'package.json'))) {
+      return dir
+    }
+  }
+  return ''
 }

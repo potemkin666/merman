@@ -53,7 +53,12 @@ export const TideLog: React.FC<TideLogProps> = ({ logs }) => {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
         {(['all', 'info', 'warning', 'error'] as Filter[]).map((f) => (
           <Tooltip key={f} text={filterTooltips[f]}>
-            <button onClick={() => setFilter(f)} style={filterBtnStyle(filter === f)}>
+            <button
+              onClick={() => setFilter(f)}
+              aria-label={`Filter logs: ${f}`}
+              aria-pressed={filter === f}
+              style={filterBtnStyle(filter === f)}
+            >
               {f.charAt(0).toUpperCase() + f.slice(1)} ({counts[f]})
             </button>
           </Tooltip>
@@ -64,6 +69,16 @@ export const TideLog: React.FC<TideLogProps> = ({ logs }) => {
           </Tooltip>
           <div
             onClick={() => setRawMode((r) => !r)}
+            role="switch"
+            aria-checked={rawMode}
+            aria-label="Toggle raw log mode"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                setRawMode((r) => !r)
+              }
+            }}
             style={{
               width: 36,
               height: 20,

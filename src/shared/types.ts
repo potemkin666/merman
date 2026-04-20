@@ -5,6 +5,7 @@ export interface AppConfig {
   provider: string
   apiKey: string
   presets: Preset[]
+  welcomeSeen?: boolean
 }
 
 export interface LogEntry {

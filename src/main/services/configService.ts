@@ -2,21 +2,9 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
 import type { AppConfig } from '../../shared/types'
+import { defaultConfig } from '../../shared/defaults'
 
-const defaults: AppConfig = {
-  openClawPath: '',
-  workspacePath: '',
-  model: 'gpt-4o',
-  provider: 'openai',
-  apiKey: '',
-  presets: [
-    { id: '1', name: 'Quick Chat', mode: 'default', description: 'Simple conversational task' },
-    { id: '2', name: 'Starter Mode', mode: 'starter', description: 'Guided, safe defaults for beginners' },
-    { id: '3', name: 'Coding Helper', mode: 'code', description: 'Code generation and review' },
-    { id: '4', name: 'Local Researcher', mode: 'research', description: 'Investigate, summarize, and report' },
-    { id: '5', name: 'Advanced Custom', mode: 'advanced', description: 'Full control, no guardrails' },
-  ],
-}
+const defaults: AppConfig = { ...defaultConfig }
 
 function getConfigPath(): string {
   const dir = app.getPath('userData')
@@ -40,7 +28,9 @@ export function getConfig(): AppConfig {
 
 export function setConfig(updates: Partial<AppConfig>): AppConfig {
   const current = getConfig()
-  const updated = { ...current, ...updates }
+  // Never persist apiKey in the config JSON — it is stored securely via keychainService
+  const { apiKey: _stripped, ...safeUpdates } = updates
+  const updated = { ...current, ...safeUpdates, apiKey: '' }
   writeFileSync(getConfigPath(), JSON.stringify(updated, null, 2))
   return updated
 }

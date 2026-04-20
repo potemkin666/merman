@@ -24,7 +24,7 @@ const STATUS_LABELS: Record<ServiceStatus, string> = {
 export const StatusCard: React.FC<StatusCardProps> = ({ status, model, provider }) => {
   const color = STATUS_COLORS[status]
   return (
-    <div style={{
+    <div role="status" aria-live="polite" aria-label={`OpenClaw service status: ${STATUS_LABELS[status]}`} style={{
       background: 'var(--color-panel)',
       border: '1px solid var(--color-border)',
       borderRadius: 'var(--radius-lg)',
@@ -33,7 +33,7 @@ export const StatusCard: React.FC<StatusCardProps> = ({ status, model, provider 
       alignItems: 'center',
       gap: 16,
     }}>
-      <div style={{
+      <div aria-hidden="true" style={{
         width: 12,
         height: 12,
         borderRadius: '50%',

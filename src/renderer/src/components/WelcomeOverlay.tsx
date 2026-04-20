@@ -7,7 +7,7 @@ interface WelcomeOverlayProps {
 const steps = [
   {
     emoji: '🔱',
-    title: 'Welcome to OpenClaw Harbor',
+    title: 'Welcome to OpenClaw Harbour',
     body: `This app helps you control OpenClaw — an AI agent that can do tasks on your computer.
 
 Think of it like having a very capable assistant. You tell it what to do, it goes and does it, then comes back with results.
@@ -30,7 +30,7 @@ You write what you want. The emissary figures out how to do it.
     title: 'Here is how this works',
     body: `1. First, run the Setup Wizard — it checks your computer is ready
 2. Point the app at your OpenClaw folder
-3. Hit "Summon" on the Harbor to start the service
+3. Hit "Summon" on the Harbour to start the service
 4. Go to Dispatch and type what you want done
 5. The emissary dives in and brings back results
 
@@ -39,7 +39,7 @@ That is it. No command line needed.`,
   {
     emoji: '🏠',
     title: 'Quick tour of the sidebar',
-    body: `🏠 Harbor — Your home base. See status, start/stop the service.
+    body: `🏠 Harbour — Your home base. See status, start/stop the service.
 ⚙️ Setup — Guided walkthrough to get everything ready.
 🔱 Dispatch — Send tasks to the emissary.
 🐠 Fishtank — Watch the emissary work (it is fun).
@@ -56,7 +56,11 @@ export const WelcomeOverlay: React.FC<WelcomeOverlayProps> = ({ onDismiss }) => 
   const isLast = step === steps.length - 1
 
   return (
-    <div style={{
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Welcome tour"
+      style={{
       position: 'fixed',
       inset: 0,
       background: 'rgba(4, 8, 20, 0.92)',
@@ -89,7 +93,7 @@ export const WelcomeOverlay: React.FC<WelcomeOverlayProps> = ({ onDismiss }) => 
           animation: 'shimmerBar 3s ease-in-out infinite',
         }} />
 
-        <div style={{ fontSize: 48, marginBottom: 16 }}>{current.emoji}</div>
+        <div style={{ fontSize: 48, marginBottom: 16 }} aria-hidden="true">{current.emoji}</div>
         <h2 style={{ fontSize: 22, fontWeight: 700, color: 'var(--color-primary)', marginBottom: 16 }}>
           {current.title}
         </h2>
@@ -104,7 +108,7 @@ export const WelcomeOverlay: React.FC<WelcomeOverlayProps> = ({ onDismiss }) => 
         </p>
 
         {/* Progress dots */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 24 }} aria-hidden="true">
           {steps.map((_, i) => (
             <div key={i} style={{
               width: i === step ? 24 : 8,
@@ -120,6 +124,7 @@ export const WelcomeOverlay: React.FC<WelcomeOverlayProps> = ({ onDismiss }) => 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <button
             onClick={onDismiss}
+            aria-label="Skip welcome tour"
             style={{
               padding: '8px 16px',
               background: 'transparent',
@@ -136,6 +141,7 @@ export const WelcomeOverlay: React.FC<WelcomeOverlayProps> = ({ onDismiss }) => 
             {step > 0 && (
               <button
                 onClick={() => setStep(s => s - 1)}
+                aria-label="Go to previous step"
                 style={{
                   padding: '10px 20px',
                   background: 'transparent',
@@ -152,6 +158,7 @@ export const WelcomeOverlay: React.FC<WelcomeOverlayProps> = ({ onDismiss }) => 
             )}
             <button
               onClick={() => isLast ? onDismiss() : setStep(s => s + 1)}
+              aria-label={isLast ? 'Finish tour and start using the app' : 'Go to next step'}
               style={{
                 padding: '10px 24px',
                 background: 'var(--color-primary)',

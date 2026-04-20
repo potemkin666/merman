@@ -1,7 +1,7 @@
 {
   "name": "openclaw-harbor",
   "version": "1.0.0",
-  "description": "OpenClaw Harbor - Desktop companion for OpenClaw",
+  "description": "OpenClaw Harbour - Desktop companion for OpenClaw",
   "main": "./out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
@@ -12,11 +12,13 @@
     "dist": "electron-vite build && electron-builder",
     "dist:mac": "electron-vite build && electron-builder --mac",
     "dist:win": "electron-vite build && electron-builder --win",
-    "dist:linux": "electron-vite build && electron-builder --linux"
+    "dist:linux": "electron-vite build && electron-builder --linux",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "build": {
     "appId": "com.openclaw.harbor",
-    "productName": "OpenClaw Harbor",
+    "productName": "OpenClaw Harbour",
     "directories": {
       "output": "release"
     },
@@ -54,6 +56,9 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
+    "node-pty": "^1.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
@@ -66,6 +71,7 @@
     "electron-builder": "^26.8.1",
     "electron-vite": "^5.0.0",
     "typescript": "^5.3.3",
-    "vite": "^6.4.2"
+    "vite": "^6.4.2",
+    "vitest": "^4.1.4"
   }
 }

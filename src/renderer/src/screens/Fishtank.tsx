@@ -1,8 +1,64 @@
-import React, { useState, useEffect, useCallback } from 'react'
-import type { ServiceStatus } from '../../../shared/types'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
+import type { ServiceStatus, TaskResult } from '../../../shared/types'
+import { SeabedCanvas } from '../components/SeabedCanvas'
 
 interface FishtankProps {
   status: ServiceStatus
+  recentTasks?: TaskResult[]
+}
+
+// --- Weather system ---
+// Weather state derived from app state and recent task history
+
+type Weather = 'calm' | 'working' | 'stormy' | 'golden' | 'thunderstorm'
+
+function deriveWeather(status: ServiceStatus, recentTasks: TaskResult[]): Weather {
+  // Thunderstorm: service crashed (status is error)
+  if (status === 'error') return 'thunderstorm'
+
+  // Working: actively running
+  if (status === 'running') return 'working'
+
+  // Check recent tasks for context
+  const lastTask = recentTasks[0]
+  if (lastTask) {
+    // Golden: last task was successful and finished recently (within 60s)
+    if (lastTask.status === 'done' && lastTask.finishedAt) {
+      const ago = Date.now() - new Date(lastTask.finishedAt).getTime()
+      if (ago < 60000) return 'golden'
+    }
+    // Stormy: last task failed and was recent
+    if (lastTask.status === 'error' && lastTask.finishedAt) {
+      const ago = Date.now() - new Date(lastTask.finishedAt).getTime()
+      if (ago < 60000) return 'stormy'
+    }
+  }
+
+  return 'calm'
+}
+
+const WEATHER_BACKGROUNDS: Record<Weather, string> = {
+  calm: 'linear-gradient(180deg, #041020 0%, #081a35 25%, #0b2445 50%, #0d2a4a 75%, #0a1e38 100%)',
+  working: 'linear-gradient(180deg, #041020 0%, #0a1e40 25%, #0e2d55 50%, #102f58 75%, #0c2240 100%)',
+  stormy: 'linear-gradient(180deg, #0a0810 0%, #14101e 25%, #1a1428 50%, #1e1630 75%, #150e20 100%)',
+  golden: 'linear-gradient(180deg, #0a0e10 0%, #1a2215 25%, #1e2818 50%, #22301a 75%, #18220e 100%)',
+  thunderstorm: 'linear-gradient(180deg, #080408 0%, #100810 25%, #180c14 50%, #1a0a12 75%, #12060a 100%)',
+}
+
+const WEATHER_CAUSTIC_OPACITY: Record<Weather, number> = {
+  calm: 1,
+  working: 1.4,
+  stormy: 0.3,
+  golden: 0.8,
+  thunderstorm: 0.15,
+}
+
+const WEATHER_BUBBLE_COUNT: Record<Weather, [number, number]> = {
+  calm: [5, 6],
+  working: [8, 8],
+  stormy: [10, 10],
+  golden: [4, 4],
+  thunderstorm: [12, 8],
 }
 
 // --- Expanded idle animations ---
@@ -171,13 +227,164 @@ function getSayings(status: ServiceStatus): string[] {
   }
 }
 
-export const Fishtank: React.FC<FishtankProps> = ({ status }) => {
+function getStatusText(status: ServiceStatus): string {
+  switch (status) {
+    case 'running': return 'working in the depths'
+    case 'error': return 'troubled waters'
+    case 'stopped': return 'resting at shore'
+    default: return 'awaiting command'
+  }
+}
+
+// --- Contextual click responses ---
+// The emissary reacts differently based on status and history
+
+function getClickResponse(status: ServiceStatus, recentTasks: TaskResult[], clickCount: number): string {
+  const lastTask = recentTasks[0]
+  const errorCount = recentTasks.filter(t => t.status === 'error').length
+  const totalDone = recentTasks.filter(t => t.status === 'done').length
+
+  // Dramatic refusal pool (rare)
+  if (clickCount > 5) {
+    const annoyed = [
+      'You keep poking the glass. I am trying to concentrate.',
+      '*sighs dramatically* Yes? Again?',
+      'If you click me one more time I am going back to the Mariana Trench.',
+      'I am a professional emissary, not a stress ball.',
+      '*gives you The Look*',
+      'Into the Mariana Trench? Again? I just got my scales polished...',
+    ]
+    return annoyed[Math.floor(Math.random() * annoyed.length)]
+  }
+
+  // Status-aware responses
+  if (status === 'running') {
+    const busy = [
+      'I am working! Give me a moment...',
+      '*holds up a fin* Almost there...',
+      'Patience. The deep does not yield quickly.',
+      'The currents are strong but I am stronger. Almost done.',
+      'Do not rush the deep. Good things take time.',
+    ]
+    return busy[Math.floor(Math.random() * busy.length)]
+  }
+
+  if (status === 'error') {
+    const troubled = [
+      'Things got rough down there. Check the Tide Log for clues.',
+      'I tried my best, truly. The sea was not kind this time.',
+      '*looks sheepish* That... did not go as planned.',
+      'Even the best emissaries have rough tides. Shall we try again?',
+    ]
+    return troubled[Math.floor(Math.random() * troubled.length)]
+  }
+
+  // History-aware responses
+  if (lastTask && lastTask.status === 'error') {
+    const afterError = [
+      'Last time was rough... but I have recovered. Ready for another dive.',
+      'I do not like to talk about what happened last time. Let us move forward.',
+      '*nervously* So... that last task... shall we try something different?',
+    ]
+    return afterError[Math.floor(Math.random() * afterError.length)]
+  }
+
+  if (errorCount >= 3) {
+    const manyErrors = [
+      `${errorCount} failed tasks? The sea is testing us. Perhaps check the configuration?`,
+      'I keep running into trouble. Maybe the Deep Config needs adjusting?',
+      'The currents are hostile lately. Something might be misconfigured.',
+    ]
+    return manyErrors[Math.floor(Math.random() * manyErrors.length)]
+  }
+
+  if (totalDone >= 5) {
+    const experienced = [
+      `${totalDone} tasks completed! We make a good duo, you and I.`,
+      'Another click? You must enjoy my company. The feeling is mutual.',
+      'We have been through a lot together. I am proud of what we have accomplished.',
+      `${totalDone} successful dives! I am getting quite fond of this arrangement.`,
+    ]
+    return experienced[Math.floor(Math.random() * experienced.length)]
+  }
+
+  if (totalDone === 0 && recentTasks.length === 0) {
+    const fresh = [
+      'Hello! I am your emissary. Click "Dispatch" in the sidebar to send me on a task!',
+      'New around here? Head to Setup first, then Dispatch to give me something to do.',
+      'I am ready for my first mission! Just say the word.',
+      '*waves enthusiastically* A new commander! I will not disappoint.',
+    ]
+    return fresh[Math.floor(Math.random() * fresh.length)]
+  }
+
+  // Default click responses
+  const defaultClicks = [
+    'Yes? Did you need something?',
+    '*looks up from his coral collection* Oh, hello!',
+    'I am at your service. Head to Dispatch if you have a task.',
+    'Click me again and I might just blush.',
+    '*taps the glass from the inside* I see you!',
+    'You know, most people just send tasks. You actually visit. I like that.',
+    'The depths are calm. A perfect time to dispatch a new task.',
+  ]
+  return defaultClicks[Math.floor(Math.random() * defaultClicks.length)]
+}
+
+export const Fishtank: React.FC<FishtankProps> = ({ status, recentTasks = [] }) => {
   const [animation, setAnimation] = useState<EmissaryAnimation>('floating')
   const [saying, setSaying] = useState('')
   const [sayingKey, setSayingKey] = useState(0)
   const [bubbles, setBubbles] = useState<Array<{ id: number; x: number; size: number; delay: number }>>([])
   const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number; size: number; delay: number }>>([])
+  const [clickCount, setClickCount] = useState(0)
+  const tankRef = useRef<HTMLDivElement>(null)
+  const [tankSize, setTankSize] = useState({ width: 800, height: 420 })
+  const [weather, setWeather] = useState<Weather>('calm')
+  const [lightningFlash, setLightningFlash] = useState(false)
 
+  // Derive weather from status + recent tasks
+  useEffect(() => {
+    const w = deriveWeather(status, recentTasks)
+    setWeather(w)
+  }, [status, recentTasks])
+
+  // Lightning flash effect for thunderstorm weather
+  useEffect(() => {
+    if (weather !== 'thunderstorm') return
+    const flash = () => {
+      setLightningFlash(true)
+      setTimeout(() => setLightningFlash(false), 150)
+    }
+    // Flash immediately, then periodically
+    flash()
+    const interval = setInterval(() => {
+      if (Math.random() < 0.4) flash()
+    }, 2000 + Math.random() * 3000)
+    return () => clearInterval(interval)
+  }, [weather])
+
+  // Golden shimmer fades back to calm after 60s
+  useEffect(() => {
+    if (weather === 'golden' || weather === 'stormy') {
+      const timeout = setTimeout(() => setWeather('calm'), 60000)
+      return () => clearTimeout(timeout)
+    }
+  }, [weather])
+
+  // Reset click count after 20 seconds of no interaction
+  useEffect(() => {
+    if (clickCount === 0) return
+    const t = setTimeout(() => setClickCount(0), 20000)
+    return () => clearTimeout(t)
+  }, [clickCount])
+
+  const handleEmissaryClick = useCallback(() => {
+    setClickCount(c => c + 1)
+    const response = getClickResponse(status, recentTasks, clickCount)
+    setSaying(response)
+    setSayingKey(k => k + 1)
+  }, [status, recentTasks, clickCount])
   // Cycle animations every 5–10 seconds
   useEffect(() => {
     const pick = () => {
@@ -205,16 +412,17 @@ export const Fishtank: React.FC<FishtankProps> = ({ status }) => {
     return () => clearInterval(interval)
   }, [status])
 
-  // Generate random bubbles
+  // Generate random bubbles — density varies with weather
   const spawnBubbles = useCallback(() => {
-    const count = 5 + Math.floor(Math.random() * 6)
+    const [base, extra] = WEATHER_BUBBLE_COUNT[weather]
+    const count = base + Math.floor(Math.random() * extra)
     setBubbles(Array.from({ length: count }, (_, i) => ({
       id: Date.now() + i,
       x: 5 + Math.random() * 90,
       size: 3 + Math.random() * 14,
       delay: Math.random() * 4,
     })))
-  }, [])
+  }, [weather])
 
   // Floating light particles
   const spawnParticles = useCallback(() => {
@@ -236,6 +444,20 @@ export const Fishtank: React.FC<FishtankProps> = ({ status }) => {
     return () => { clearInterval(bInterval); clearInterval(pInterval) }
   }, [spawnBubbles, spawnParticles])
 
+  // Track tank dimensions for seabed canvas
+  useEffect(() => {
+    const el = tankRef.current
+    if (!el) return
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect
+        setTankSize({ width: Math.floor(width), height: Math.floor(height) })
+      }
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
   const emissaryStyle = getEmissaryStyle(animation, status)
 
   return (
@@ -248,81 +470,138 @@ export const Fishtank: React.FC<FishtankProps> = ({ status }) => {
       </p>
 
       {/* The tank */}
-      <div style={{
+      <div
+        ref={tankRef}
+        role="img"
+        aria-label={`Fishtank: the emissary is ${ANIMATION_LABELS[animation].toLowerCase()}. Status: ${getStatusText(status)}. Weather: ${weather}.`}
+        style={{
         flex: 1,
         minHeight: 420,
-        background: 'linear-gradient(180deg, #041020 0%, #081a35 25%, #0b2445 50%, #0d2a4a 75%, #0a1e38 100%)',
-        border: '2px solid rgba(0, 200, 212, 0.2)',
+        background: WEATHER_BACKGROUNDS[weather],
+        border: weather === 'thunderstorm' ? '2px solid rgba(232,93,93,0.3)' : weather === 'golden' ? '2px solid rgba(240,200,80,0.3)' : '2px solid rgba(0, 200, 212, 0.2)',
         borderRadius: 20,
         position: 'relative',
         overflow: 'hidden',
-        boxShadow: 'inset 0 0 100px rgba(0, 200, 212, 0.06), 0 0 50px rgba(0, 200, 212, 0.08)',
+        boxShadow: weather === 'thunderstorm'
+          ? 'inset 0 0 100px rgba(232,93,93,0.08), 0 0 50px rgba(232,93,93,0.06)'
+          : weather === 'golden'
+          ? 'inset 0 0 100px rgba(240,200,80,0.08), 0 0 50px rgba(240,200,80,0.06)'
+          : 'inset 0 0 100px rgba(0, 200, 212, 0.06), 0 0 50px rgba(0, 200, 212, 0.08)',
+        transition: 'background 2s ease, border-color 2s ease, box-shadow 2s ease',
       }}>
-        {/* Caustic light overlays */}
-        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 25% 15%, rgba(0,200,212,0.07) 0%, transparent 55%)', animation: 'caustic 8s ease-in-out infinite alternate', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 75% 35%, rgba(26,155,138,0.06) 0%, transparent 45%)', animation: 'caustic 13s ease-in-out infinite alternate-reverse', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 80%, rgba(0,100,150,0.05) 0%, transparent 40%)', animation: 'caustic 10s ease-in-out infinite alternate', pointerEvents: 'none' }} />
+        {/* Lightning flash overlay */}
+        {lightningFlash && (
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'rgba(255,255,255,0.15)',
+            pointerEvents: 'none',
+            zIndex: 10,
+          }} />
+        )}
 
-        {/* Light rays from surface */}
+        {/* Caustic light overlays — opacity adjusts with weather */}
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 25% 15%, rgba(0,200,212,0.07) 0%, transparent 55%)', animation: 'caustic 8s ease-in-out infinite alternate', pointerEvents: 'none', opacity: WEATHER_CAUSTIC_OPACITY[weather], transition: 'opacity 2s' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 75% 35%, rgba(26,155,138,0.06) 0%, transparent 45%)', animation: 'caustic 13s ease-in-out infinite alternate-reverse', pointerEvents: 'none', opacity: WEATHER_CAUSTIC_OPACITY[weather], transition: 'opacity 2s' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 80%, rgba(0,100,150,0.05) 0%, transparent 40%)', animation: 'caustic 10s ease-in-out infinite alternate', pointerEvents: 'none', opacity: WEATHER_CAUSTIC_OPACITY[weather], transition: 'opacity 2s' }} />
+
+        {/* Golden shimmer overlay — visible only during golden weather */}
+        {weather === 'golden' && (
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'radial-gradient(ellipse at 50% 30%, rgba(240,200,80,0.08) 0%, transparent 60%)',
+            animation: 'caustic 4s ease-in-out infinite alternate',
+            pointerEvents: 'none',
+          }} />
+        )}
+
+        {/* Turbulence overlay — stormy / thunderstorm distortion */}
+        {(weather === 'stormy' || weather === 'thunderstorm') && (
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: weather === 'thunderstorm'
+              ? 'radial-gradient(ellipse at 50% 50%, rgba(232,93,93,0.04) 0%, transparent 50%)'
+              : 'radial-gradient(ellipse at 50% 50%, rgba(150,100,200,0.04) 0%, transparent 50%)',
+            animation: 'caustic 2s ease-in-out infinite alternate',
+            pointerEvents: 'none',
+          }} />
+        )}
+
+        {/* Light rays from surface — dimmed in storms */}
         <div style={{
           position: 'absolute', top: 0, left: '20%', width: 80, height: '60%',
-          background: 'linear-gradient(180deg, rgba(0,200,212,0.04), transparent)',
+          background: weather === 'golden'
+            ? 'linear-gradient(180deg, rgba(240,200,80,0.06), transparent)'
+            : 'linear-gradient(180deg, rgba(0,200,212,0.04), transparent)',
           transform: 'skewX(-8deg)',
           pointerEvents: 'none',
           animation: 'lightRay 6s ease-in-out infinite alternate',
+          opacity: weather === 'stormy' || weather === 'thunderstorm' ? 0.2 : 1,
+          transition: 'opacity 2s',
         }} />
         <div style={{
           position: 'absolute', top: 0, left: '60%', width: 50, height: '50%',
-          background: 'linear-gradient(180deg, rgba(0,200,212,0.03), transparent)',
+          background: weather === 'golden'
+            ? 'linear-gradient(180deg, rgba(240,200,80,0.04), transparent)'
+            : 'linear-gradient(180deg, rgba(0,200,212,0.03), transparent)',
           transform: 'skewX(5deg)',
           pointerEvents: 'none',
           animation: 'lightRay 8s ease-in-out infinite alternate-reverse',
+          opacity: weather === 'stormy' || weather === 'thunderstorm' ? 0.2 : 1,
+          transition: 'opacity 2s',
         }} />
 
-        {/* Floating light particles */}
-        {particles.map(p => (
-          <div key={p.id} style={{
-            position: 'absolute',
-            left: `${p.x}%`,
-            top: `${p.y}%`,
-            width: p.size,
-            height: p.size,
-            borderRadius: '50%',
-            background: 'rgba(0,200,212,0.3)',
-            boxShadow: '0 0 6px rgba(0,200,212,0.3)',
-            animation: `particleFloat ${6 + p.size}s ease-in-out ${p.delay}s infinite`,
-            pointerEvents: 'none',
-          }} />
-        ))}
+        {/* Floating light particles — color shifts with weather */}
+        {particles.map(p => {
+          const particleColor = weather === 'golden' ? 'rgba(240,200,80,0.3)' : weather === 'thunderstorm' ? 'rgba(232,93,93,0.2)' : weather === 'stormy' ? 'rgba(150,100,200,0.2)' : 'rgba(0,200,212,0.3)'
+          return (
+            <div key={p.id} style={{
+              position: 'absolute',
+              left: `${p.x}%`,
+              top: `${p.y}%`,
+              width: p.size,
+              height: p.size,
+              borderRadius: '50%',
+              background: particleColor,
+              boxShadow: `0 0 6px ${particleColor}`,
+              animation: `particleFloat ${6 + p.size}s ease-in-out ${p.delay}s infinite`,
+              pointerEvents: 'none',
+            }} />
+          )
+        })}
 
-        {/* Bubbles */}
-        {bubbles.map(b => (
-          <div key={b.id} style={{
-            position: 'absolute',
-            left: `${b.x}%`,
-            bottom: -20,
-            width: b.size,
-            height: b.size,
-            borderRadius: '50%',
-            background: 'radial-gradient(circle at 30% 30%, rgba(0,200,212,0.4), rgba(0,200,212,0.08))',
-            border: '1px solid rgba(0,200,212,0.15)',
-            animation: `bubbleRise ${4 + b.size * 0.3}s ease-in ${b.delay}s infinite`,
-            pointerEvents: 'none',
-          }} />
-        ))}
+        {/* Bubbles — appearance shifts with weather */}
+        {bubbles.map(b => {
+          const bubbleColor = weather === 'golden' ? 'rgba(240,200,80,0.4)' : weather === 'thunderstorm' ? 'rgba(232,93,93,0.3)' : weather === 'stormy' ? 'rgba(150,100,200,0.3)' : 'rgba(0,200,212,0.4)'
+          const bubbleBg = weather === 'golden' ? 'rgba(240,200,80,0.08)' : weather === 'thunderstorm' ? 'rgba(232,93,93,0.06)' : weather === 'stormy' ? 'rgba(150,100,200,0.06)' : 'rgba(0,200,212,0.08)'
+          const bubbleBorder = weather === 'golden' ? 'rgba(240,200,80,0.15)' : weather === 'thunderstorm' ? 'rgba(232,93,93,0.12)' : weather === 'stormy' ? 'rgba(150,100,200,0.12)' : 'rgba(0,200,212,0.15)'
+          const speed = (weather === 'stormy' || weather === 'thunderstorm') ? 2.5 : 4
+          return (
+            <div key={b.id} style={{
+              position: 'absolute',
+              left: `${b.x}%`,
+              bottom: -20,
+              width: b.size,
+              height: b.size,
+              borderRadius: '50%',
+              background: `radial-gradient(circle at 30% 30%, ${bubbleColor}, ${bubbleBg})`,
+              border: `1px solid ${bubbleBorder}`,
+              animation: `bubbleRise ${speed + b.size * 0.3}s ease-in ${b.delay}s infinite`,
+              pointerEvents: 'none',
+            }} />
+          )
+        })}
 
-        {/* Seabed */}
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 70, background: 'linear-gradient(180deg, transparent, rgba(8,18,35,0.95))', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: 5, left: '8%', fontSize: 22, opacity: 0.3 }}>🪸</div>
-        <div style={{ position: 'absolute', bottom: 8, left: '25%', fontSize: 14, opacity: 0.2 }}>🌿</div>
-        <div style={{ position: 'absolute', bottom: 4, right: '12%', fontSize: 18, opacity: 0.25 }}>🐚</div>
-        <div style={{ position: 'absolute', bottom: 10, left: '55%', fontSize: 12, opacity: 0.18 }}>🪨</div>
-        <div style={{ position: 'absolute', bottom: 6, right: '35%', fontSize: 16, opacity: 0.2 }}>🪸</div>
-        <div style={{ position: 'absolute', bottom: 12, left: '42%', fontSize: 10, opacity: 0.15 }}>✨</div>
-        <div style={{ position: 'absolute', bottom: 2, left: '72%', fontSize: 13, opacity: 0.2 }}>🌊</div>
+        {/* Procedural seabed */}
+        <SeabedCanvas width={tankSize.width} height={tankSize.height} seed={42} weather={weather} />
 
-        {/* The Emissary */}
-        <div style={{
+        {/* The Emissary — clickable for interaction */}
+        <div
+          onClick={handleEmissaryClick}
+          role="button"
+          tabIndex={0}
+          aria-label="Click the emissary to interact"
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleEmissaryClick() } }}
+          style={{
           position: 'absolute',
           top: '45%',
           left: '50%',
@@ -331,6 +610,7 @@ export const Fishtank: React.FC<FishtankProps> = ({ status }) => {
           flexDirection: 'column',
           alignItems: 'center',
           gap: 12,
+          cursor: 'pointer',
           ...emissaryStyle,
         }}>
           <div style={{
@@ -364,7 +644,7 @@ export const Fishtank: React.FC<FishtankProps> = ({ status }) => {
         </div>
 
         {/* Speech bubble */}
-        <div key={sayingKey} style={{
+        <div key={sayingKey} aria-live="polite" aria-label="Emissary says" style={{
           position: 'absolute',
           top: 20,
           right: 20,
@@ -388,7 +668,7 @@ export const Fishtank: React.FC<FishtankProps> = ({ status }) => {
         </div>
 
         {/* Status bar */}
-        <div style={{
+        <div role="status" aria-live="polite" style={{
           position: 'absolute',
           bottom: 16,
           left: '50%',
@@ -410,6 +690,9 @@ export const Fishtank: React.FC<FishtankProps> = ({ status }) => {
           }} />
           <span style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: 500 }}>
             {status === 'running' ? 'Working in the depths' : status === 'error' ? 'Troubled waters' : status === 'stopped' ? 'Resting at shore' : 'Awaiting command'}
+          </span>
+          <span style={{ fontSize: 10, color: 'rgba(0,200,212,0.35)', fontWeight: 400, marginLeft: 4 }}>
+            {weather === 'calm' ? '☀️ clear' : weather === 'working' ? '🌊 active' : weather === 'stormy' ? '🌧️ stormy' : weather === 'golden' ? '✨ golden' : '⛈️ storm'}
           </span>
         </div>
       </div>
