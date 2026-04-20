@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { Modal } from '../components/Modal'
 import { StatusCard } from '../components/StatusCard'
 import { TideBar } from '../components/TideBar'
 import { BottleGrid } from '../components/BottleGrid'
@@ -20,6 +21,7 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
   const { invoke } = useIpc()
   const [envResults, setEnvResults] = useState<EnvCheckResult[]>([])
   const [envChecked, setEnvChecked] = useState(false)
+  const [showStopConfirm, setShowStopConfirm] = useState(false)
 
   useEffect(() => {
     invoke<EnvCheckResult[]>(IPC_CHANNELS.CHECK_ENV).then((results) => {
@@ -34,6 +36,7 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
   }
 
   const handleStop = async () => {
+    setShowStopConfirm(false)
     await invoke(IPC_CHANNELS.STOP_SERVICE)
     onStatusChange('stopped')
   }
@@ -59,6 +62,30 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
 
   return (
     <div className="screen-page">
+      {/* Stop confirmation dialog */}
+      <Modal open={showStopConfirm} title="⚠️ Stop the Service?" onClose={() => setShowStopConfirm(false)}>
+        <p style={{ fontSize: 13, color: 'var(--color-text-muted)', lineHeight: 1.6, marginBottom: 16 }}>
+          If the service is mid-task, stopping it will interrupt any work in progress.
+          Are you sure you want to stop {name}?
+        </p>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+          <button
+            onClick={() => setShowStopConfirm(false)}
+            aria-label="Cancel — keep running"
+            className="btn btn--outline"
+          >
+            Keep Running
+          </button>
+          <button
+            onClick={handleStop}
+            aria-label="Confirm stop"
+            className="btn btn--danger"
+          >
+            ✋ Stop Now
+          </button>
+        </div>
+      </Modal>
+
       <header>
         <h1 className="screen-title">The Harbour</h1>
         <p className="screen-subtitle">{statusCopy}</p>
@@ -144,7 +171,7 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
         </Tooltip>
         <Tooltip text="Stop the OpenClaw service. The agent will shut down and stop accepting tasks.">
           <button
-            onClick={handleStop}
+            onClick={() => setShowStopConfirm(true)}
             disabled={!isRunning}
             aria-label="Stop the OpenClaw service"
             className={`btn ${isRunning ? 'btn--danger' : 'btn--outline'}`}

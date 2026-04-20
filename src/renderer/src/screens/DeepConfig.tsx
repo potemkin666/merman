@@ -5,6 +5,17 @@ import { useIpc } from '../hooks/useIpc'
 import { IPC_CHANNELS } from '../../../shared/ipc'
 import type { AppConfig, Preset } from '../../../shared/types'
 
+/** Known agent mode keys — must stay in sync with the Dispatch screen's AGENT_MODES */
+const KNOWN_MODES = [
+  { value: 'default', label: 'Default — general purpose' },
+  { value: 'research', label: 'Research — investigate & summarize' },
+  { value: 'code', label: 'Code — write, review, explain code' },
+  { value: 'debug', label: 'Debug — find & fix problems' },
+  { value: 'plan', label: 'Plan — outlines & step-by-step' },
+  { value: 'starter', label: 'Starter — guided, safe defaults' },
+  { value: 'advanced', label: 'Advanced — full control, no guardrails' },
+]
+
 interface DeepConfigProps {
   config: AppConfig
   onSave: (updates: Partial<AppConfig>) => Promise<AppConfig>
@@ -263,10 +274,19 @@ export const DeepConfig: React.FC<DeepConfigProps> = ({ config, onSave }) => {
           <input type="text" value={newPreset.name}
             onChange={(e) => setNewPreset((p) => ({ ...p, name: e.target.value }))}
             placeholder="Preset name" aria-label="New preset name" className="input" style={{ flex: 1 }} />
-          <input type="text" value={newPreset.mode}
+          <select
+            value={newPreset.mode}
             onChange={(e) => setNewPreset((p) => ({ ...p, mode: e.target.value }))}
-            placeholder="Mode key" aria-label="New preset mode key" className="input" style={{ flex: 1 }} />
-          <Tooltip text="Add a new custom preset. Enter a name and a mode key (like 'code' or 'research'), then click +.">
+            aria-label="New preset mode key"
+            className="input"
+            style={{ flex: 1 }}
+          >
+            <option value="">Select a mode…</option>
+            {KNOWN_MODES.map((m) => (
+              <option key={m.value} value={m.value}>{m.label}</option>
+            ))}
+          </select>
+          <Tooltip text="Add a new custom preset. Pick a name and a mode, then click +.">
             <button onClick={addPreset} aria-label="Add new preset" className="deep-config__add-btn">
               + Add
             </button>

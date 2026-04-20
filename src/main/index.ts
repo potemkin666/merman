@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell, dialog } from 'electron'
+import { app, BrowserWindow, ipcMain, shell, dialog, Notification } from 'electron'
 import { join } from 'path'
 import { statSync } from 'fs'
 import { IPC_CHANNELS } from '../shared/ipc'
@@ -15,6 +15,21 @@ import { initHabitStore, recordDispatch, getSuggestion } from './services/habitS
 let mainWindow: BrowserWindow | null = null
 let serviceRun: RunResult | null = null
 let dispatchRun: RunResult | null = null
+
+/**
+ * Show a desktop notification if the app window is not focused.
+ * Useful for long-running tasks — the user may have tabbed away.
+ */
+function notifyIfUnfocused(title: string, body: string): void {
+  if (mainWindow?.isFocused()) return
+  if (!Notification.isSupported()) return
+  const notification = new Notification({ title, body })
+  notification.on('click', () => {
+    mainWindow?.show()
+    mainWindow?.focus()
+  })
+  notification.show()
+}
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -228,6 +243,7 @@ ipcMain.handle(IPC_CHANNELS.DISPATCH_TASK, async (_event, { prompt, mode, openCl
     dispatchRun = null
     addLog('info', 'Task completed')
     mainWindow?.webContents.send(IPC_CHANNELS.ON_STATUS_CHANGE, 'idle')
+    notifyIfUnfocused('🔱 Task Complete', 'Your emissary has returned to shore with results.')
     return { ok: true, output }
   } catch (err) {
     dispatchRun = null
@@ -240,6 +256,7 @@ ipcMain.handle(IPC_CHANNELS.DISPATCH_TASK, async (_event, { prompt, mode, openCl
     }
     addLog('error', `Task failed: ${msg}`)
     mainWindow?.webContents.send(IPC_CHANNELS.ON_STATUS_CHANGE, 'error')
+    notifyIfUnfocused('❌ Task Failed', 'Something went wrong. Check the app for details.')
     return { ok: false, error: msg, explanation: translateError(msg, 'dispatch') }
   }
 })
