@@ -13,6 +13,7 @@ import { ConfigProvider, useConfig } from './hooks/useConfig'
 import { LogsProvider, useLogs } from './hooks/useLogs'
 import { ServiceProvider, useService } from './hooks/useService'
 import { TasksProvider, useTasks } from './hooks/useTasks'
+import { ThemeProvider } from './hooks/useTheme'
 import { isElectronAvailable, useIpc } from './hooks/useIpc'
 import { IPC_CHANNELS } from '../../shared/ipc'
 
@@ -92,14 +93,16 @@ export default function App() {
   }
 
   return (
-    <ConfigProvider>
-      <LogsProvider>
-        <ServiceProvider>
-          <TasksProvider>
-            <AppContent />
-          </TasksProvider>
-        </ServiceProvider>
-      </LogsProvider>
-    </ConfigProvider>
+    <ThemeProvider>
+      <ConfigProvider>
+        <LogsProvider>
+          <ServiceProvider>
+            <TasksProvider>
+              <AppContent />
+            </TasksProvider>
+          </ServiceProvider>
+        </LogsProvider>
+      </ConfigProvider>
+    </ThemeProvider>
   )
 }

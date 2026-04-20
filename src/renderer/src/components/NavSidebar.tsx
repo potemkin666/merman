@@ -1,6 +1,8 @@
 import React, { useState, useCallback } from 'react'
 import { Tooltip } from './Tooltip'
 import { useConfig } from '../hooks/useConfig'
+import { useTheme } from '../hooks/useTheme'
+import type { ThemeMode } from '../hooks/useTheme'
 
 interface NavItem {
   id: string
@@ -37,9 +39,15 @@ let bubbleIdCounter = 0
 
 export const NavSidebar: React.FC<NavSidebarProps> = ({ active, onNavigate }) => {
   const { config } = useConfig()
+  const { theme, setTheme } = useTheme()
   const name = config.emissaryName || 'Azurel'
   const [clickBubbles, setClickBubbles] = useState<ClickBubble[]>([])
 
+  const cycleTheme = useCallback(() => {
+    const order: ThemeMode[] = ['deep', 'surface', 'auto']
+    const next = order[(order.indexOf(theme) + 1) % order.length]
+    setTheme(next)
+  }, [theme, setTheme])
   const spawnBubbles = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     const rect = e.currentTarget.getBoundingClientRect()
     const navRect = e.currentTarget.closest('nav')?.getBoundingClientRect()
@@ -79,7 +87,7 @@ export const NavSidebar: React.FC<NavSidebarProps> = ({ active, onNavigate }) =>
     <nav aria-label="Main navigation" style={{
       width: 80,
       minHeight: '100vh',
-      background: 'rgba(10, 20, 38, 0.9)',
+      background: 'var(--color-nav-bg)',
       backdropFilter: 'blur(12px)',
       borderRight: '1px solid var(--color-border)',
       display: 'flex',
@@ -170,6 +178,37 @@ export const NavSidebar: React.FC<NavSidebarProps> = ({ active, onNavigate }) =>
           }}
         />
       ))}
+
+      {/* Theme toggle — cycles between Deep / Surface / Auto */}
+      <div style={{ marginTop: 'auto', paddingBottom: 16, position: 'relative', zIndex: 1 }}>
+        <Tooltip
+          text={theme === 'deep' ? 'Deep mode (dark). Click to switch to Surface mode.' : theme === 'surface' ? 'Surface mode (light). Click to switch to Auto.' : 'Auto — follows your system preference. Click to switch to Deep mode.'}
+          position="right"
+          maxWidth={220}
+        >
+          <button
+            onClick={cycleTheme}
+            aria-label={`Theme: ${theme}. Click to change.`}
+            style={{
+              width: 56,
+              height: 40,
+              borderRadius: 'var(--radius-md)',
+              background: 'transparent',
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-text-muted)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 4,
+              fontSize: 16,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+          >
+            <span aria-hidden="true">{theme === 'deep' ? '🌊' : theme === 'surface' ? '☀️' : '🔄'}</span>
+          </button>
+        </Tooltip>
+      </div>
     </nav>
   )
 }
