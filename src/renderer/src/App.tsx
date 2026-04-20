@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { NavSidebar } from './components/NavSidebar'
 import { WelcomeOverlay } from './components/WelcomeOverlay'
 import { ElectronUnavailable } from './components/ElectronUnavailable'
@@ -24,6 +24,7 @@ function AppContent() {
   const { recentTasks, addTask } = useTasks()
   const { invoke } = useIpc()
   const [showWelcome, setShowWelcome] = useState(false)
+  const [attachedFiles, setAttachedFiles] = useState<string[]>([])
 
   useEffect(() => {
     if (!loading) {
@@ -35,12 +36,20 @@ function AppContent() {
     }
   }, [loading, invoke])
 
-  const dismissWelcome = () => {
+  const dismissWelcome = useCallback(() => {
     setShowWelcome(false)
     invoke(IPC_CHANNELS.SET_WELCOME_SEEN).catch(() => {
       // Best-effort persist
     })
-  }
+  }, [invoke])
+
+  const handleFishtankWorkspaceDrop = useCallback((path: string) => {
+    updateConfig({ workspacePath: path })
+  }, [updateConfig])
+
+  const handleFishtankFilesAttached = useCallback((paths: string[]) => {
+    setAttachedFiles(prev => [...prev, ...paths])
+  }, [])
 
   if (loading) {
     return (
@@ -58,7 +67,7 @@ function AppContent() {
       }}>
         <div style={{ fontSize: 56, animation: 'emissaryFloat 3s ease-in-out infinite' }} aria-hidden="true">🔱</div>
         <p style={{ color: 'var(--color-primary)', fontSize: 18, fontWeight: 600 }}>OpenClaw Harbour</p>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: 14 }}>Your merman emissary awaits.</p>
+        <p style={{ color: 'var(--color-text-muted)', fontSize: 14 }}>Your emissary awaits.</p>
       </div>
     )
   }
@@ -68,7 +77,7 @@ function AppContent() {
       case 'harbor': return <Harbor config={config} status={status} recentTasks={recentTasks} onStatusChange={setStatus} onNavigate={setPage} />
       case 'setup': return <SetupWizard config={config} onSave={updateConfig} />
       case 'dispatch': return <Dispatch config={config} onTaskAdded={addTask} />
-      case 'fishtank': return <Fishtank status={status} recentTasks={recentTasks} />
+      case 'fishtank': return <Fishtank status={status} recentTasks={recentTasks} onWorkspacePathSet={handleFishtankWorkspaceDrop} onFilesAttached={handleFishtankFilesAttached} />
       case 'deepdive': return <DeepDive config={config} />
       case 'tidelog': return <TideLog logs={logs} />
       case 'deepconfig': return <DeepConfig config={config} onSave={updateConfig} />

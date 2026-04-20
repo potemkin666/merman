@@ -1,20 +1,29 @@
 import { safeStorage } from 'electron'
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync, unlinkSync } from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
 
 /**
  * Securely store and retrieve the API key using Electron's safeStorage API.
- * Falls back to a simple obfuscation if safeStorage is not available (e.g. some Linux configurations).
  *
- * The encrypted key is stored as a separate binary file in userData,
- * NOT as plaintext in config.json.
+ * When safeStorage is unavailable (e.g. some Linux desktop configurations without
+ * a keyring), the service **refuses to persist the key** and returns an empty
+ * string. The renderer is expected to check `isSecureStorageAvailable()` and warn
+ * the user to set the key via an environment variable instead.
+ *
+ * Previous versions fell back to trivially-reversible XOR obfuscation — that has
+ * been removed because it gave a false sense of security.
  */
 
 function getKeyPath(): string {
   const dir = app.getPath('userData')
   mkdirSync(dir, { recursive: true })
   return join(dir, 'api-key.enc')
+}
+
+/** Whether the OS-level secure storage (keychain / credential manager) is usable. */
+export function isSecureStorageAvailable(): boolean {
+  return safeStorage.isEncryptionAvailable()
 }
 
 export function getApiKey(): string {
@@ -28,43 +37,32 @@ export function getApiKey(): string {
     if (safeStorage.isEncryptionAvailable()) {
       return safeStorage.decryptString(encryptedBuffer)
     }
-    // Fallback: try to reverse XOR obfuscation (non-safeStorage path)
-    try {
-      const deobfuscated = Buffer.from(
-        Array.from(encryptedBuffer).map((b, i) => b ^ (0xa5 + (i % 37)))
-      )
-      return deobfuscated.toString('utf8')
-    } catch {
-      return ''
-    }
+    // safeStorage is not available — we can no longer decrypt whatever is on disk.
+    // Do NOT attempt any obfuscation fallback; just return empty.
+    return ''
   } catch {
     return ''
   }
 }
 
-export function setApiKey(key: string): void {
+export function setApiKey(key: string): { stored: boolean } {
   const keyPath = getKeyPath()
 
   if (!key) {
     // Clear the stored key
     if (existsSync(keyPath)) {
-      writeFileSync(keyPath, Buffer.alloc(0))
+      try { unlinkSync(keyPath) } catch { /* ENOENT is expected if the file was already removed */ }
     }
-    return
+    return { stored: true }
   }
 
   if (safeStorage.isEncryptionAvailable()) {
     const encrypted = safeStorage.encryptString(key)
     writeFileSync(keyPath, encrypted)
-  } else {
-    // safeStorage not available (some Linux desktop configurations).
-    // We apply simple XOR obfuscation so the key is not stored as plain UTF-8.
-    // WARNING: This is NOT a cryptographic guarantee — it only prevents
-    // casual reading of the file. On affected systems, recommend the user
-    // set the key as an environment variable instead.
-    const obfuscated = Buffer.from(
-      Array.from(Buffer.from(key, 'utf8')).map((b, i) => b ^ (0xa5 + (i % 37)))
-    )
-    writeFileSync(keyPath, obfuscated)
+    return { stored: true }
   }
+
+  // safeStorage not available — refuse to store the key insecurely.
+  // The caller (renderer) should warn the user and suggest environment variables.
+  return { stored: false }
 }

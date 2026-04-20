@@ -6,6 +6,7 @@ export const defaultConfig: AppConfig = {
   model: 'gpt-4o',
   provider: 'openai',
   apiKey: '',
+  emissaryName: 'Azurel',
   welcomeSeen: false,
   presets: [
     { id: '1', name: 'Quick Chat', mode: 'default', description: 'Simple conversational task' },

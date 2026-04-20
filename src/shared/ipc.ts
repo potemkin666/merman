@@ -6,6 +6,7 @@ export const IPC_CHANNELS = {
   SET_CONFIG: 'set-config',
   GET_API_KEY: 'get-api-key',
   SET_API_KEY: 'set-api-key',
+  CHECK_SECURE_STORAGE: 'check-secure-storage',
   GET_WELCOME_SEEN: 'get-welcome-seen',
   SET_WELCOME_SEEN: 'set-welcome-seen',
   RUN_SETUP: 'run-setup',
@@ -17,12 +18,14 @@ export const IPC_CHANNELS = {
   GET_LOGS: 'get-logs',
   ON_LOG: 'on-log',
   ON_STATUS_CHANGE: 'on-status-change',
+  RESOLVE_DROPPED_PATHS: 'resolve-dropped-paths',
   TERMINAL_SPAWN: 'terminal-spawn',
   TERMINAL_INPUT: 'terminal-input',
   TERMINAL_RESIZE: 'terminal-resize',
   TERMINAL_KILL: 'terminal-kill',
   TERMINAL_OUTPUT: 'terminal-output',
   TERMINAL_EXIT: 'terminal-exit',
+  GET_HABIT_SUGGESTION: 'get-habit-suggestion',
 } as const
 
 export type IpcChannel = typeof IPC_CHANNELS[keyof typeof IPC_CHANNELS]

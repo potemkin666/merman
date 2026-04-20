@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { LogPanel } from '../components/LogPanel'
 import { Tooltip } from '../components/Tooltip'
 import { HelpHint } from '../components/Tooltip'
+import { useConfig } from '../hooks/useConfig'
 import type { LogEntry } from '../../../shared/types'
 
 interface TideLogProps {
@@ -11,20 +12,10 @@ interface TideLogProps {
 type Filter = 'all' | LogEntry['level']
 
 export const TideLog: React.FC<TideLogProps> = ({ logs }) => {
+  const { config } = useConfig()
+  const name = config.emissaryName || 'Azurel'
   const [filter, setFilter] = useState<Filter>('all')
   const [rawMode, setRawMode] = useState(false)
-
-  const filterBtnStyle = (active: boolean): React.CSSProperties => ({
-    padding: '6px 14px',
-    borderRadius: 'var(--radius-sm)',
-    background: active ? 'rgba(0,200,212,0.15)' : 'transparent',
-    color: active ? 'var(--color-primary)' : 'var(--color-text-muted)',
-    border: active ? '1px solid var(--color-border)' : '1px solid transparent',
-    fontSize: 12,
-    fontWeight: active ? 600 : 400,
-    cursor: 'pointer',
-    transition: 'all 0.15s',
-  })
 
   const counts = {
     all: logs.length,
@@ -41,12 +32,12 @@ export const TideLog: React.FC<TideLogProps> = ({ logs }) => {
   }
 
   return (
-    <div style={{ padding: 32, maxWidth: 900, margin: '0 auto', height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--color-primary)', marginBottom: 8, display: 'flex', alignItems: 'center' }}>
+    <div className="screen-page--flex">
+      <h1 className="screen-title" style={{ display: 'flex', alignItems: 'center' }}>
         Tide Log
-        <HelpHint text="This is the activity log. Everything the app and the emissary do gets recorded here. Think of it like a diary of events. If something goes wrong, this is the first place to look." />
+        <HelpHint text={`This is the activity log. Everything the app and ${name} do gets recorded here. Think of it like a diary of events. If something goes wrong, this is the first place to look.`} />
       </h1>
-      <p style={{ color: 'var(--color-text-muted)', marginBottom: 24, fontSize: 14 }}>
+      <p className="screen-subtitle">
         🌊 The currents of activity, recorded. Newest entries are at the bottom.
       </p>
 
@@ -57,7 +48,7 @@ export const TideLog: React.FC<TideLogProps> = ({ logs }) => {
               onClick={() => setFilter(f)}
               aria-label={`Filter logs: ${f}`}
               aria-pressed={filter === f}
-              style={filterBtnStyle(filter === f)}
+              className={`filter-btn ${filter === f ? 'filter-btn--active' : 'filter-btn--inactive'}`}
             >
               {f.charAt(0).toUpperCase() + f.slice(1)} ({counts[f]})
             </button>

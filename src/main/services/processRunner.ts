@@ -42,9 +42,22 @@ export function validatePath(path: string): { ok: boolean; error?: string } {
 }
 
 /**
+ * A properly typed wrapper that gives callers access to both the
+ * underlying ChildProcess (for kill/pid) and the completion Promise.
+ */
+export interface RunResult {
+  /** The spawned child process — use for kill(), pid, etc. */
+  process: ChildProcess
+  /** Resolves with the full stdout+stderr output when the process exits 0; rejects otherwise. */
+  completed: Promise<string>
+}
+
+/**
  * Spawn a command and stream output to the renderer.
- * Returns the ChildProcess when used as a fire-and-forget (onExit supplied).
- * Returns a Promise<string> when awaited.
+ *
+ * Returns a `RunResult` with:
+ * - `process` — the ChildProcess (for kill/pid)
+ * - `completed` — a Promise<string> that resolves when the process exits
  *
  * shell: false — arguments are passed directly to the executable, preventing
  * shell metacharacter injection via the cwd or args.
@@ -55,7 +68,7 @@ export function runCommand(
   cwd: string,
   win: BrowserWindow | null,
   onExit?: (proc: ChildProcess) => void
-): ChildProcess & Promise<string> {
+): RunResult {
   const proc = spawn(cmd, args, { cwd, shell: false })
   const output: string[] = []
 
@@ -71,7 +84,7 @@ export function runCommand(
     win?.webContents.send(IPC_CHANNELS.ON_LOG, makeLog('warning', msg.trim()))
   })
 
-  const promise = new Promise<string>((resolve, reject) => {
+  const completed = new Promise<string>((resolve, reject) => {
     proc.on('close', (code) => {
       if (onExit) onExit(proc)
       if (code === 0) {
@@ -87,14 +100,7 @@ export function runCommand(
     })
   })
 
-  // Merge the promise interface onto the ChildProcess so callers
-  // can either await the result or hold a reference for kill().
-  const hybrid = proc as ChildProcess & Promise<string>
-  hybrid.then = promise.then.bind(promise)
-  hybrid.catch = promise.catch.bind(promise)
-  hybrid.finally = promise.finally.bind(promise)
-
-  return hybrid
+  return { process: proc, completed }
 }
 
 export function killProcess(proc: ChildProcess): void {

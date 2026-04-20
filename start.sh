@@ -6,6 +6,9 @@
 
 set -e
 
+# Always run from the directory this script lives in
+cd "$(dirname "$0")"
+
 echo ""
 echo "  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 echo "  ~                                          ~"
@@ -33,14 +36,35 @@ fi
 echo "  ✅  Node.js found! ($(node --version))"
 echo ""
 
-# Install dependencies if needed
+# Determine whether we need to install / reinstall dependencies.
+# Case 1: node_modules does not exist (fresh clone).
+# Case 2: package.json is newer than node_modules (pulled changes).
+NEED_INSTALL=0
 if [ ! -d "node_modules" ]; then
-    echo "  📦  First time? Installing dependencies..."
-    echo "  (This only happens once. Grab a coffee.)"
+    NEED_INSTALL=1
+elif [ "package.json" -nt "node_modules" ]; then
+    NEED_INSTALL=1
+fi
+
+if [ "$NEED_INSTALL" -eq 1 ]; then
+    if [ ! -d "node_modules" ]; then
+        echo "  📦  First time? Installing dependencies..."
+        echo "  (This only happens once. Grab a coffee.)"
+    else
+        echo "  📦  Dependencies may have changed — updating..."
+    fi
     echo ""
     npm install
     echo ""
     echo "  ✅  Dependencies installed!"
+    echo ""
+
+    echo "  🔧  Rebuilding native modules for Electron..."
+    echo "  (This makes sure node-pty works correctly.)"
+    echo ""
+    npm run rebuild 2>/dev/null || echo "  ⚠️  Native rebuild had warnings (non-fatal — the app will still work)."
+    echo ""
+    echo "  ✅  Rebuild complete!"
     echo ""
 fi
 

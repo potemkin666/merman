@@ -455,7 +455,7 @@ export const SetupWizard: React.FC<SetupWizardProps> = ({ config, onSave }) => {
             <ol style={{ paddingLeft: 20, fontSize: 14, color: 'var(--color-text-muted)', lineHeight: 2.2, marginTop: 12 }}>
               <li>Go to <strong style={{ color: 'var(--color-primary)' }}>The Harbour</strong> and click <strong style={{ color: 'var(--color-primary)' }}>Summon</strong> to start the service</li>
               <li>Go to <strong style={{ color: 'var(--color-primary)' }}>Dispatch</strong> and type your first task</li>
-              <li>Check the <strong style={{ color: 'var(--color-primary)' }}>Fishtank</strong> to watch the emissary work!</li>
+              <li>Check the <strong style={{ color: 'var(--color-primary)' }}>Fishtank</strong> to watch {config.emissaryName || 'Azurel'} work!</li>
             </ol>
             <p style={{ color: 'var(--color-text-muted)', fontSize: 12, marginTop: 16, fontStyle: 'italic' }}>
               💡 Tip: Hover over any button or &quot;?&quot; icon in the app for an explanation of what it does.

@@ -1,18 +1,20 @@
 import { app, BrowserWindow, ipcMain, shell, dialog } from 'electron'
 import { join } from 'path'
-import type { ChildProcess } from 'child_process'
+import { statSync } from 'fs'
 import { IPC_CHANNELS } from '../shared/ipc'
 import { checkEnvironment, detectOpenClawPath } from './services/envChecker'
 import { runCommand, killProcess, validatePath } from './services/processRunner'
+import type { RunResult } from './services/processRunner'
 import { spawnTerminal, writeTerminal, resizeTerminal, killTerminal } from './services/terminalService'
 import { getConfig, setConfig } from './services/configService'
-import { getApiKey, setApiKey } from './services/keychainService'
-import { getLogs, addLog } from './services/logService'
+import { getApiKey, setApiKey, isSecureStorageAvailable } from './services/keychainService'
+import { getLogs, addLog, initLogStore } from './services/logService'
 import { translateError } from './services/translateError'
+import { initHabitStore, recordDispatch, getSuggestion } from './services/habitService'
 
 let mainWindow: BrowserWindow | null = null
-let serviceProcess: ChildProcess | null = null
-let dispatchProcess: ChildProcess | null = null
+let serviceRun: RunResult | null = null
+let dispatchRun: RunResult | null = null
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -45,6 +47,9 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+  const userData = app.getPath('userData')
+  initLogStore(userData)
+  initHabitStore(userData)
   createWindow()
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
@@ -56,13 +61,13 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', () => {
-  if (serviceProcess) {
-    killProcess(serviceProcess)
-    serviceProcess = null
+  if (serviceRun) {
+    killProcess(serviceRun.process)
+    serviceRun = null
   }
-  if (dispatchProcess) {
-    killProcess(dispatchProcess)
-    dispatchProcess = null
+  if (dispatchRun) {
+    killProcess(dispatchRun.process)
+    dispatchRun = null
   }
   killTerminal()
 })
@@ -96,8 +101,11 @@ ipcMain.handle(IPC_CHANNELS.SET_CONFIG, (_event, updates) => setConfig(updates))
 ipcMain.handle(IPC_CHANNELS.GET_API_KEY, () => getApiKey())
 
 ipcMain.handle(IPC_CHANNELS.SET_API_KEY, (_event, key: string) => {
-  setApiKey(key)
-  return { ok: true }
+  return setApiKey(key)
+})
+
+ipcMain.handle(IPC_CHANNELS.CHECK_SECURE_STORAGE, () => {
+  return isSecureStorageAvailable()
 })
 
 ipcMain.handle(IPC_CHANNELS.GET_WELCOME_SEEN, () => {
@@ -119,7 +127,7 @@ ipcMain.handle(IPC_CHANNELS.RUN_SETUP, async (_event, openClawPath: string) => {
   }
   try {
     addLog('info', `Running npm install in ${openClawPath}`)
-    await runCommand('npm', ['install'], openClawPath, mainWindow)
+    await runCommand('npm', ['install'], openClawPath, mainWindow).completed
     addLog('info', 'Setup completed successfully')
     return { ok: true }
   } catch (err) {
@@ -140,14 +148,14 @@ ipcMain.handle(IPC_CHANNELS.START_SERVICE, async (_event, openClawPath: string) 
     return { ok: false, error: pathCheck.error }
   }
   try {
-    if (serviceProcess) {
+    if (serviceRun) {
       return { ok: false, error: 'Service is already running.' }
     }
     addLog('info', 'Starting OpenClaw service...')
     mainWindow?.webContents.send(IPC_CHANNELS.ON_STATUS_CHANGE, 'running')
-    serviceProcess = runCommand('node', ['index.js'], openClawPath, mainWindow, (proc) => {
-      if (proc === serviceProcess) {
-        serviceProcess = null
+    serviceRun = runCommand('node', ['index.js'], openClawPath, mainWindow, (proc) => {
+      if (serviceRun && proc === serviceRun.process) {
+        serviceRun = null
         addLog('info', 'Service process exited')
         mainWindow?.webContents.send(IPC_CHANNELS.ON_STATUS_CHANGE, 'stopped')
       }
@@ -161,9 +169,9 @@ ipcMain.handle(IPC_CHANNELS.START_SERVICE, async (_event, openClawPath: string) 
 })
 
 ipcMain.handle(IPC_CHANNELS.STOP_SERVICE, async () => {
-  if (serviceProcess) {
-    killProcess(serviceProcess)
-    serviceProcess = null
+  if (serviceRun) {
+    killProcess(serviceRun.process)
+    serviceRun = null
     addLog('info', 'Service stopped by user')
   } else {
     addLog('info', 'Stop requested, but no active service process')
@@ -178,16 +186,16 @@ ipcMain.handle(IPC_CHANNELS.RESTART_SERVICE, async (_event, openClawPath: string
     addLog('error', `Restart path rejected: ${pathCheck.error}`)
     return { ok: false, error: pathCheck.error }
   }
-  if (serviceProcess) {
-    killProcess(serviceProcess)
-    serviceProcess = null
+  if (serviceRun) {
+    killProcess(serviceRun.process)
+    serviceRun = null
     addLog('info', 'Stopping service for restart...')
   }
   addLog('info', 'Restarting OpenClaw service...')
   mainWindow?.webContents.send(IPC_CHANNELS.ON_STATUS_CHANGE, 'running')
-  serviceProcess = runCommand('node', ['index.js'], openClawPath, mainWindow, (proc) => {
-    if (proc === serviceProcess) {
-      serviceProcess = null
+  serviceRun = runCommand('node', ['index.js'], openClawPath, mainWindow, (proc) => {
+    if (serviceRun && proc === serviceRun.process) {
+      serviceRun = null
       mainWindow?.webContents.send(IPC_CHANNELS.ON_STATUS_CHANGE, 'stopped')
     }
   })
@@ -203,21 +211,22 @@ ipcMain.handle(IPC_CHANNELS.DISPATCH_TASK, async (_event, { prompt, mode, openCl
   }
   try {
     addLog('info', `Dispatching task: ${prompt.substring(0, 60)}...`)
+    recordDispatch(prompt, mode)
     mainWindow?.webContents.send(IPC_CHANNELS.ON_STATUS_CHANGE, 'running')
-    const proc = runCommand(
+    const run = runCommand(
       'node',
       ['index.js', '--prompt', JSON.stringify(prompt), '--mode', mode],
       resolvedPath,
       mainWindow
     )
-    dispatchProcess = proc
-    const output = await proc
-    dispatchProcess = null
+    dispatchRun = run
+    const output = await run.completed
+    dispatchRun = null
     addLog('info', 'Task completed')
     mainWindow?.webContents.send(IPC_CHANNELS.ON_STATUS_CHANGE, 'idle')
     return { ok: true, output }
   } catch (err) {
-    dispatchProcess = null
+    dispatchRun = null
     const msg = err instanceof Error ? err.message : 'Unknown error'
     // Distinguish user-initiated cancellation from real errors
     if (msg.includes('SIGTERM') || msg.includes('killed')) {
@@ -232,14 +241,30 @@ ipcMain.handle(IPC_CHANNELS.DISPATCH_TASK, async (_event, { prompt, mode, openCl
 })
 
 ipcMain.handle(IPC_CHANNELS.CANCEL_TASK, async () => {
-  if (dispatchProcess) {
-    killProcess(dispatchProcess)
-    dispatchProcess = null
+  if (dispatchRun) {
+    killProcess(dispatchRun.process)
+    dispatchRun = null
     addLog('info', 'Task cancelled by user')
     mainWindow?.webContents.send(IPC_CHANNELS.ON_STATUS_CHANGE, 'idle')
     return { ok: true }
   }
   return { ok: false, error: 'No active task to cancel.' }
+})
+
+// --- Dropped file/folder resolution ---
+
+ipcMain.handle(IPC_CHANNELS.RESOLVE_DROPPED_PATHS, async (_event, paths: string[]) => {
+  const results = paths.map((p) => {
+    try {
+      const stat = statSync(p)
+      return { path: p, isDirectory: stat.isDirectory(), error: false }
+    } catch (err) {
+      // Path may be inaccessible (permissions) or non-existent
+      addLog('warning', `Could not stat dropped path: ${p} — ${err instanceof Error ? err.message : 'unknown error'}`)
+      return { path: p, isDirectory: false, error: true }
+    }
+  })
+  return results.filter(r => !r.error)
 })
 
 // --- Terminal IPC Handlers ---
@@ -271,4 +296,10 @@ ipcMain.handle(IPC_CHANNELS.TERMINAL_KILL, async () => {
   killTerminal()
   addLog('info', 'Terminal session ended')
   return { ok: true }
+})
+
+// --- Habit suggestion ---
+
+ipcMain.handle(IPC_CHANNELS.GET_HABIT_SUGGESTION, () => {
+  return getSuggestion()
 })

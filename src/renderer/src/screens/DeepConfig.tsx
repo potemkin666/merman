@@ -37,8 +37,18 @@ export const DeepConfig: React.FC<DeepConfigProps> = ({ config, onSave }) => {
   const [saved, setSaved] = useState(false)
   const [newPreset, setNewPreset] = useState({ name: '', mode: '' })
   const [detecting, setDetecting] = useState(false)
+  const [secureStorageAvailable, setSecureStorageAvailable] = useState(true)
 
   useEffect(() => { setForm(config) }, [config])
+
+  // Check if OS-level secure storage is available
+  useEffect(() => {
+    invoke<boolean>(IPC_CHANNELS.CHECK_SECURE_STORAGE).then((available) => {
+      setSecureStorageAvailable(available)
+    }).catch(() => {
+      // Assume available if check fails — err on the side of not alarming the user
+    })
+  }, [invoke])
 
   // Load API key from secure storage on mount
   useEffect(() => {
@@ -68,7 +78,11 @@ export const DeepConfig: React.FC<DeepConfigProps> = ({ config, onSave }) => {
     // Save config (without apiKey) and save apiKey separately via secure storage
     await onSave(form)
     try {
-      await invoke(IPC_CHANNELS.SET_API_KEY, apiKey)
+      const result = await invoke<{ stored: boolean }>(IPC_CHANNELS.SET_API_KEY, apiKey)
+      if (result && !result.stored) {
+        // Key was not persisted — safeStorage is unavailable
+        setSecureStorageAvailable(false)
+      }
     } catch {
       // safeStorage might not be available; key will not persist
     }
@@ -119,6 +133,24 @@ export const DeepConfig: React.FC<DeepConfigProps> = ({ config, onSave }) => {
           want to switch to a different AI model.
         </p>
       </div>
+
+      <section style={{ marginBottom: 28 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, color: 'var(--color-text)' }}>
+          Emissary
+        </h2>
+        <div>
+          <label style={labelStyle}>
+            Emissary Name
+            <HelpHint text="Give your emissary a name! This name appears throughout the app — in status messages, tooltips, the Fishtank, and more. Default is 'Azurel'." />
+          </label>
+          <input type="text" value={form.emissaryName}
+            onChange={(e) => setForm((f) => ({ ...f, emissaryName: e.target.value }))}
+            placeholder="Azurel" aria-label="Emissary name" style={inputStyle} />
+          <p style={{ marginTop: 6, fontSize: 11, color: 'var(--color-text-muted)' }}>
+            🧜‍♂️ Your emissary will introduce himself as <strong style={{ color: 'var(--color-primary)' }}>{form.emissaryName || 'Azurel'}</strong> throughout the app.
+          </p>
+        </div>
+      </section>
 
       <section style={{ marginBottom: 28 }}>
         <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, color: 'var(--color-text)' }}>
@@ -243,9 +275,40 @@ export const DeepConfig: React.FC<DeepConfigProps> = ({ config, onSave }) => {
           <input type="password" value={apiKey}
             onChange={(e) => setApiKeyState(e.target.value)}
             placeholder="sk-..." aria-label="API key" style={inputStyle} />
-          <p style={{ marginTop: 6, fontSize: 11, color: 'var(--color-text-muted)' }}>
-            🔒 This key is stored securely using your operating system&apos;s keychain. It is never saved as plain text.
-          </p>
+          {secureStorageAvailable ? (
+            <p style={{ marginTop: 6, fontSize: 11, color: 'var(--color-text-muted)' }}>
+              🔒 This key is stored securely using your operating system&apos;s keychain. It is never saved as plain text.
+            </p>
+          ) : (
+            <div style={{
+              marginTop: 8,
+              background: 'rgba(232,93,93,0.1)',
+              border: '1px solid rgba(232,93,93,0.3)',
+              borderRadius: 'var(--radius-md)',
+              padding: '10px 14px',
+            }}>
+              <p style={{ fontSize: 12, color: 'var(--color-error)', fontWeight: 600, marginBottom: 4 }}>
+                ⚠️ Secure storage is not available on this system
+              </p>
+              <p style={{ fontSize: 11, color: 'var(--color-text-muted)', lineHeight: 1.6 }}>
+                Your operating system does not provide a keychain or credential manager that
+                this app can use. <strong style={{ color: 'var(--color-text)' }}>The API key will not be saved between sessions.</strong> To
+                keep your key available, set it as an environment variable instead:
+              </p>
+              <code style={{
+                display: 'block',
+                marginTop: 6,
+                fontSize: 11,
+                fontFamily: 'monospace',
+                color: 'var(--color-primary)',
+                background: 'var(--color-surface)',
+                padding: '6px 10px',
+                borderRadius: 'var(--radius-sm)',
+              }}>
+                export OPENAI_API_KEY=sk-...
+              </code>
+            </div>
+          )}
         </div>
       </section>
 

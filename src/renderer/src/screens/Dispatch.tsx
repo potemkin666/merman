@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useIpc } from '../hooks/useIpc'
 import { Tooltip } from '../components/Tooltip'
 import { HelpHint } from '../components/Tooltip'
+import { AdvancedConfirmDialog } from '../components/AdvancedConfirmDialog'
 import { IPC_CHANNELS } from '../../../shared/ipc'
 import type { AppConfig, TaskResult, Preset, CommandResult } from '../../../shared/types'
 
@@ -26,6 +27,7 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
   const [result, setResult] = useState<CommandResult | null>(null)
   const [elapsed, setElapsed] = useState(0)
   const [cancelling, setCancelling] = useState(false)
+  const [showAdvancedConfirm, setShowAdvancedConfirm] = useState(false)
   const elapsedRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // Elapsed time counter during dispatch
@@ -51,12 +53,14 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
       .map((p: Preset) => ({ value: p.mode, label: p.name, hint: p.description || '' })),
   ]
 
+  const name = config.emissaryName || 'Azurel'
+
   const getStatusCopy = () => {
     if (cancelling) return '🛑 Cancelling the task...'
-    if (dispatching) return `🌊 The emissary has been dispatched! He is working on it... (${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')} elapsed)`
+    if (dispatching) return `🌊 ${name} has been dispatched! He is working on it... (${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')} elapsed)`
     if (result && !result.ok) return '⚠️ Something went wrong. Read the explanation below — it will tell you what to do.'
-    if (result?.ok) return '🔱 The emissary has returned with results! Scroll down to see them.'
-    return '🔱 Tell the emissary what you need. Type it in plain English below — no special format needed.'
+    if (result?.ok) return `🔱 ${name} has returned with results! Scroll down to see them.`
+    return `🔱 Tell ${name} what you need. Type it in plain English below — no special format needed.`
   }
 
   const handleCancel = async () => {
@@ -71,6 +75,15 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
 
   const handleDispatch = async () => {
     if (!prompt.trim()) return
+
+    // If the selected mode is "advanced" (Advanced Custom preset), require confirmation first
+    const isAdvancedMode = mode === 'advanced'
+    if (isAdvancedMode && !showAdvancedConfirm) {
+      setShowAdvancedConfirm(true)
+      return
+    }
+
+    setShowAdvancedConfirm(false)
     setDispatching(true)
     setResult(null)
 
@@ -100,28 +113,28 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
   }
 
   return (
-    <div style={{ padding: 32, maxWidth: 900, margin: '0 auto' }}>
-      <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--color-primary)', marginBottom: 8 }}>
+    <div className="screen-page">
+      {/* Advanced Custom confirmation dialog */}
+      <AdvancedConfirmDialog
+        open={showAdvancedConfirm}
+        prompt={prompt.trim()}
+        openClawPath={config.openClawPath}
+        onConfirm={handleDispatch}
+        onCancel={() => setShowAdvancedConfirm(false)}
+      />
+
+      <h1 className="screen-title">
         Dispatch
       </h1>
-      <p style={{ color: 'var(--color-text-muted)', marginBottom: 24, fontSize: 14, lineHeight: 1.6 }}>
+      <p className="screen-subtitle" style={{ lineHeight: 1.6 }}>
         {getStatusCopy()}
       </p>
 
       {/* How-to hint */}
       {!result && !dispatching && (
-        <div style={{
-          background: 'var(--color-panel)',
-          border: '1px solid var(--color-border)',
-          borderRadius: 'var(--radius-lg)',
-          padding: '14px 20px',
-          marginBottom: 20,
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: 12,
-        }}>
-          <span style={{ fontSize: 18, flexShrink: 0 }}>💡</span>
-          <div style={{ fontSize: 12, color: 'var(--color-text-muted)', lineHeight: 1.7 }}>
+        <div className="hint-box">
+          <span className="hint-box__icon">💡</span>
+          <div className="hint-box__text">
             <strong style={{ color: 'var(--color-text)' }}>How to write a good task:</strong> Just describe what you want
             in plain English. Be specific. For example: <em style={{ color: 'var(--color-primary)' }}>&quot;Summarize the main
             points of this article&quot;</em> or <em style={{ color: 'var(--color-primary)' }}>&quot;Write a Python script
@@ -130,40 +143,23 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
         </div>
       )}
 
-      <div style={{
-        background: 'var(--color-panel)',
-        border: '1px solid var(--color-border)',
-        borderRadius: 'var(--radius-lg)',
-        padding: 24,
-        marginBottom: 20,
-      }}>
-        <label style={{ display: 'flex', alignItems: 'center', marginBottom: 8, fontSize: 13, color: 'var(--color-text-muted)' }}>
+      <div className="card card--padded card--mb">
+        <label className="label" style={{ marginBottom: 8 }}>
           Instruction
           <HelpHint text="Type what you want the AI agent to do. Use plain English — no coding or special commands needed. Be as specific as you can." />
         </label>
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Describe the task for the emissary... For example: &quot;Write me a short email thanking my team for their hard work this week&quot;"
+          placeholder={`Describe the task for ${name}... For example: "Write me a short email thanking my team for their hard work this week"`}
           rows={6}
-          aria-label="Task instruction for the emissary"
-          style={{
-            width: '100%',
-            background: 'var(--color-surface)',
-            border: '1px solid var(--color-border)',
-            borderRadius: 'var(--radius-md)',
-            padding: '12px 14px',
-            color: 'var(--color-text)',
-            fontSize: 14,
-            resize: 'vertical',
-            outline: 'none',
-            lineHeight: 1.5,
-          }}
+          aria-label={`Task instruction for ${name}`}
+          className="input input--textarea"
         />
 
         <div style={{ display: 'flex', gap: 12, marginTop: 16, alignItems: 'center' }}>
           <div style={{ flex: 1 }}>
-            <label style={{ display: 'flex', alignItems: 'center', marginBottom: 6, fontSize: 12, color: 'var(--color-text-muted)' }}>
+            <label className="label label--sm" style={{ marginBottom: 6 }}>
               Mode
               <HelpHint text="Modes change how the agent approaches your task. 'Default' works for most things. Pick 'Code' for programming tasks, 'Research' for investigation, etc. Not sure? Just leave it on Default." />
             </label>
@@ -171,16 +167,8 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
               value={mode}
               onChange={(e) => setMode(e.target.value)}
               aria-label="Agent mode"
-              style={{
-                width: '100%',
-                background: 'var(--color-surface)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius-md)',
-                padding: '9px 12px',
-                color: 'var(--color-text)',
-                fontSize: 14,
-                outline: 'none',
-              }}
+              className="input"
+              style={{ padding: '9px 12px' }}
             >
               {allModes.map((m) => (
                 <option key={m.value} value={m.value}>{m.label}</option>
@@ -188,11 +176,11 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
             </select>
           </div>
 
-          <Tooltip text={dispatching ? 'The emissary is already working on something. Please wait.' : !prompt.trim() ? 'Type an instruction first, then click here to send it.' : 'Click to send this task to the emissary. He will dive into the depths and return with results.'}>
+          <Tooltip text={dispatching ? `${name} is already working on something. Please wait.` : !prompt.trim() ? 'Type an instruction first, then click here to send it.' : `Click to send this task to ${name}. He will dive into the depths and return with results.`}>
             <button
               onClick={handleDispatch}
               disabled={dispatching || !prompt.trim()}
-              aria-label={dispatching ? 'Dispatching task' : 'Dispatch task to emissary'}
+              aria-label={dispatching ? 'Dispatching task' : `Dispatch task to ${name}`}
               style={{
                 marginTop: 20,
                 padding: '10px 28px',
@@ -206,11 +194,11 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
                 whiteSpace: 'nowrap',
               }}
             >
-              {dispatching ? `⏳ Dispatching... (${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')})` : '🔱 Dispatch Emissary'}
+              {dispatching ? `⏳ Dispatching... (${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')})` : `🔱 Dispatch ${name}`}
             </button>
           </Tooltip>
           {dispatching && (
-            <Tooltip text="Cancel the current task. The emissary will return immediately.">
+            <Tooltip text={`Cancel the current task. ${name} will return immediately.`}>
               <button
                 onClick={handleCancel}
                 disabled={cancelling}
@@ -247,32 +235,16 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
           <h3 style={{ fontSize: 13, fontWeight: 600, marginBottom: 12, color: 'var(--color-success)' }}>
             ✅ Returned to shore
           </h3>
-          <pre style={{
-            fontSize: 12,
-            fontFamily: 'monospace',
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-all',
-            color: 'var(--color-text)',
-            background: 'var(--color-surface)',
-            padding: 12,
-            borderRadius: 'var(--radius-md)',
-            maxHeight: 300,
-            overflowY: 'auto',
-          }}>
+          <pre className="output-pre">
             {result.output || 'Task completed successfully.'}
           </pre>
         </div>
       )}
 
       {result && !result.ok && (
-        <div style={{
-          background: 'var(--color-panel)',
-          border: '1px solid rgba(232,93,93,0.3)',
-          borderRadius: 'var(--radius-lg)',
-          padding: 20,
-        }}>
+        <div className="card" style={{ borderColor: 'rgba(232,93,93,0.3)', padding: 20 }}>
           <h3 style={{ fontSize: 13, fontWeight: 600, marginBottom: 12, color: 'var(--color-error)' }}>
-            ❌ The emissary returned empty-handed
+            ❌ {name} returned empty-handed
           </h3>
           {result.explanation ? (
             <div style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 12 }}>
@@ -287,18 +259,7 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
               </p>
             </div>
           ) : (
-            <pre style={{
-              fontSize: 12,
-              fontFamily: 'monospace',
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-all',
-              color: 'var(--color-error)',
-              background: 'var(--color-surface)',
-              padding: 12,
-              borderRadius: 'var(--radius-md)',
-              maxHeight: 200,
-              overflowY: 'auto',
-            }}>
+            <pre className="output-pre" style={{ color: 'var(--color-error)', maxHeight: 200 }}>
               {result.error}
             </pre>
           )}
@@ -308,16 +269,8 @@ export const Dispatch: React.FC<DispatchProps> = ({ config, onTaskAdded }) => {
                 onClick={handleDispatch}
                 disabled={dispatching}
                 aria-label="Retry the failed task"
-                style={{
-                  marginTop: 12,
-                  padding: '8px 18px',
-                  background: 'var(--color-warning)',
-                  color: '#0a0f1e',
-                  borderRadius: 'var(--radius-md)',
-                  fontWeight: 600,
-                  fontSize: 13,
-                  cursor: 'pointer',
-                }}
+                className="btn btn--warning"
+                style={{ marginTop: 12, fontSize: 13 }}
               >
                 🔄 Retry
               </button>

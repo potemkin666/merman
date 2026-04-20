@@ -4,6 +4,7 @@ export interface AppConfig {
   model: string
   provider: string
   apiKey: string
+  emissaryName: string
   presets: Preset[]
   welcomeSeen?: boolean
 }
@@ -54,4 +55,10 @@ export interface CommandResult {
   output?: string
   error?: string
   explanation?: ErrorExplanation
+}
+
+export interface HabitSuggestion {
+  text: string
+  mode: string
+  confidence: number
 }
