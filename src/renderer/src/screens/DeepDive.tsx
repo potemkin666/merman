@@ -224,7 +224,7 @@ export const DeepDive: React.FC<DeepDiveProps> = ({ config }) => {
     } else {
       setNarration(result.error || 'Could not start terminal session.')
     }
-  }, [config.openClawPath, invoke])
+  }, [config.openClawPath, invoke, name])
 
   const handleSurface = useCallback(async () => {
     await invoke(IPC_CHANNELS.TERMINAL_KILL)

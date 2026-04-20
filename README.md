@@ -27,6 +27,8 @@ It wraps and orchestrates your existing OpenClaw install rather than replacing i
 | UI | [React](https://react.dev/) 18 + TypeScript |
 | Bundler | [Vite](https://vitejs.dev/) 6 |
 | Packaging | [electron-builder](https://www.electron.build/) 26 |
+| Linting | [ESLint](https://eslint.org/) 9 + [@typescript-eslint](https://typescript-eslint.io/) |
+| Formatting | [Prettier](https://prettier.io/) 3 |
 | Persistence | File-system JSON (via `app.getPath('userData')`) |
 
 ---
@@ -108,6 +110,28 @@ Packaged output goes to `release/`.
 
 ---
 
+## Code Style
+
+The project uses **ESLint** with `@typescript-eslint` and **Prettier** so that every
+contributor formats code the same way.
+
+```bash
+npm run lint          # check for lint errors/warnings
+npm run lint:fix      # auto-fix what ESLint can
+npm run format        # reformat all source files with Prettier
+npm run format:check  # check formatting without writing (CI-friendly)
+```
+
+Configuration lives in:
+
+- `eslint.config.js` — ESLint 9 flat config (TypeScript, React, React Hooks, Prettier compat)
+- `.prettierrc` — Prettier options (no semicolons, single quotes, 120-char lines)
+
+> **Tip for editors:** Install the ESLint and Prettier extensions for your editor
+> and enable "format on save" for the smoothest experience.
+
+---
+
 ## How it connects to OpenClaw
 
 1. Open **Deep Config** and set the path to your local OpenClaw folder.
@@ -165,6 +189,7 @@ When a task is running, Azurel's animations shift to focused work behavior and h
 - [x] Persistent config stored in `userData/config.json`
 - [x] Local task history in browser localStorage
 - [x] Packaging via electron-builder (macOS, Windows, Linux)
+- [x] ESLint + Prettier configured for consistent code style
 
 ## Limitations
 
