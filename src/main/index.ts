@@ -8,7 +8,7 @@ import type { RunResult } from './services/processRunner'
 import { spawnTerminal, writeTerminal, resizeTerminal, killTerminal } from './services/terminalService'
 import { getConfig, setConfig } from './services/configService'
 import { getApiKey, setApiKey, isSecureStorageAvailable } from './services/keychainService'
-import { getLogs, addLog, initLogStore } from './services/logService'
+import { getLogs, addLog, initLogStore, exportLogs, flushLogs } from './services/logService'
 import { translateError } from './services/translateError'
 import { initHabitStore, recordDispatch, getSuggestion } from './services/habitService'
 
@@ -78,6 +78,7 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   stopHeartbeat()
+  flushLogs()
   if (serviceRun) {
     killProcess(serviceRun.process)
     serviceRun = null
@@ -136,6 +137,25 @@ ipcMain.handle(IPC_CHANNELS.SET_WELCOME_SEEN, async () => {
 })
 
 ipcMain.handle(IPC_CHANNELS.GET_LOGS, () => getLogs())
+
+ipcMain.handle(IPC_CHANNELS.EXPORT_LOGS, async () => {
+  if (!mainWindow) return { ok: false, error: 'No window available.' }
+  const result = await dialog.showSaveDialog(mainWindow, {
+    title: 'Export Tide Log',
+    defaultPath: `tide-log-${new Date().toISOString().slice(0, 10)}.txt`,
+    filters: [{ name: 'Text Files', extensions: ['txt'] }],
+  })
+  if (result.canceled || !result.filePath) return { ok: false, error: 'Export cancelled.' }
+  try {
+    const { writeFile } = await import('fs/promises')
+    await writeFile(result.filePath, exportLogs(), 'utf8')
+    addLog('info', `Logs exported to ${result.filePath}`)
+    return { ok: true }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Unknown error'
+    return { ok: false, error: msg }
+  }
+})
 
 ipcMain.handle(IPC_CHANNELS.VALIDATE_PATH, (_event, path: string) => {
   return validatePath(path)

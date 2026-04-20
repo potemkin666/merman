@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { mkdtempSync, readFileSync, existsSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
-import { addLog, getLogs, initLogStore, _resetForTesting } from '../logService'
+import { addLog, getLogs, initLogStore, flushLogs, _resetForTesting } from '../logService'
 
 describe('logService', () => {
   beforeEach(() => {
@@ -64,6 +64,7 @@ describe('logService', () => {
       const dir = mkdtempSync(join(tmpdir(), 'merman-log-'))
       initLogStore(dir)
       addLog('info', 'persisted entry')
+      flushLogs()
       const filePath = join(dir, 'logs.json')
       expect(existsSync(filePath)).toBe(true)
       const data = JSON.parse(readFileSync(filePath, 'utf8'))
@@ -76,6 +77,7 @@ describe('logService', () => {
       initLogStore(dir)
       addLog('info', 'first')
       addLog('warning', 'second')
+      flushLogs()
 
       // Simulate a restart
       _resetForTesting()
@@ -91,6 +93,7 @@ describe('logService', () => {
       initLogStore(dir)
       addLog('info', 'a')
       addLog('info', 'b')
+      flushLogs()
       const lastId = parseInt(getLogs()[1].id, 10)
 
       _resetForTesting()

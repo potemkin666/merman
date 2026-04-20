@@ -132,6 +132,41 @@ export const Harbor: React.FC<HarborProps> = ({ config, status, recentTasks, onS
 
       <StatusCard status={status} model={config.model} provider={config.provider} />
 
+      {/* OpenClaw path indicator — helps when debugging "why isn't this working" */}
+      {config.openClawPath ? (
+        <div style={{
+          marginTop: 12,
+          padding: '8px 14px',
+          background: 'var(--color-surface)',
+          border: '1px solid var(--color-border)',
+          borderRadius: 'var(--radius-md)',
+          fontSize: 12,
+          color: 'var(--color-text-muted)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+        }}>
+          <span aria-hidden="true">📂</span>
+          <span>Pointed at: <code style={{ color: 'var(--color-primary)', fontFamily: 'monospace', fontSize: 11 }}>{config.openClawPath}</code></span>
+        </div>
+      ) : (
+        <div style={{
+          marginTop: 12,
+          padding: '8px 14px',
+          background: 'rgba(240,165,0,0.06)',
+          border: '1px solid rgba(240,165,0,0.15)',
+          borderRadius: 'var(--radius-md)',
+          fontSize: 12,
+          color: 'var(--color-warning)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+        }}>
+          <span aria-hidden="true">⚠️</span>
+          <span>No OpenClaw path configured — <button onClick={() => onNavigate('deepconfig')} className="btn--link" style={{ fontSize: 12 }}>set one in Deep Config</button></span>
+        </div>
+      )}
+
       {/* Environment Readiness */}
       {envChecked && (
         <div className="card" style={{ marginTop: 20 }}>

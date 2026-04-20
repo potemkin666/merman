@@ -3,6 +3,8 @@ import { LogPanel } from '../components/LogPanel'
 import { Tooltip } from '../components/Tooltip'
 import { HelpHint } from '../components/Tooltip'
 import { useConfig } from '../hooks/useConfig'
+import { useIpc } from '../hooks/useIpc'
+import { IPC_CHANNELS } from '../../../shared/ipc'
 import type { LogEntry } from '../../../shared/types'
 
 interface TideLogProps {
@@ -13,6 +15,7 @@ type Filter = 'all' | LogEntry['level']
 
 export const TideLog: React.FC<TideLogProps> = ({ logs }) => {
   const { config } = useConfig()
+  const { invoke } = useIpc()
   const name = config.emissaryName || 'Azurel'
   const [filter, setFilter] = useState<Filter>('all')
   const [rawMode, setRawMode] = useState(false)
@@ -80,6 +83,16 @@ export const TideLog: React.FC<TideLogProps> = ({ logs }) => {
               left: rawMode ? 18 : 2,
             }} />
           </div>
+          <Tooltip text="Export all logs to a text file on your computer. Useful for sharing with someone who can help debug issues.">
+            <button
+              onClick={() => invoke(IPC_CHANNELS.EXPORT_LOGS)}
+              aria-label="Export logs to file"
+              className="filter-btn filter-btn--inactive"
+              style={{ marginLeft: 8 }}
+            >
+              📤 Export
+            </button>
+          </Tooltip>
         </div>
       </div>
 
