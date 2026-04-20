@@ -42,9 +42,32 @@ It wraps and orchestrates your existing OpenClaw install rather than replacing i
 ```bash
 git clone https://github.com/potemkin666/merman.git
 cd merman
-npm install
+npm install          # install all dependencies
+npm run rebuild      # compile native modules (node-pty) for Electron
+npm run dev          # launch the app in dev mode
+```
+
+> **Why `npm run rebuild`?** The app uses `node-pty` (a native C++ addon) for the
+> built-in terminal. Native addons must be compiled specifically for Electron's
+> version of Node.js. Without this step the terminal may not work (the rest of the
+> app still functions thanks to a built-in fallback).
+
+### After pulling updates
+
+When you `git pull` new changes, **`node_modules/` is not updated automatically** — it
+is listed in `.gitignore` and never stored in git. If dependencies changed you need to
+re-install:
+
+```bash
+git pull
+npm install          # picks up any new/changed dependencies
+npm run rebuild      # recompile native modules against Electron
 npm run dev
 ```
+
+> **Tip:** The one-click launchers (`start.sh` / `start.bat`) handle this for you
+> automatically — they detect when `package.json` is newer than `node_modules` and
+> re-run install + rebuild before launching.
 
 ### One-click launcher (no terminal needed!)
 
@@ -53,7 +76,11 @@ After cloning, you can use the included launcher shortcuts instead of the termin
 - **Windows:** Double-click `start.bat`
 - **macOS / Linux:** Double-click `start.sh` (or run `./start.sh` in terminal)
 
-These scripts automatically install dependencies if needed and launch the app. No npm or terminal knowledge required.
+These scripts automatically:
+1. Check that Node.js is installed
+2. Install dependencies if missing **or** if `package.json` has changed since the last install
+3. Rebuild native modules for Electron
+4. Launch the app
 
 ### Build for production (unpacked)
 
@@ -181,6 +208,55 @@ src/
     ├── types.ts           # Shared TypeScript interfaces
     └── ipc.ts             # IPC channel name constants
 ```
+
+---
+
+## Troubleshooting
+
+### App crashes on startup / "Cannot find module 'node-pty'"
+
+This means native modules were not compiled for Electron. Run:
+
+```bash
+npm run rebuild
+```
+
+If that fails, delete `node_modules` and start fresh:
+
+```bash
+rm -rf node_modules   # macOS/Linux
+rmdir /s /q node_modules  # Windows
+npm install
+npm run rebuild
+npm run dev
+```
+
+### I ran `git pull` and now the app is broken
+
+`git pull` only updates source files — it does **not** touch `node_modules/`. If
+dependencies changed in the pull, run:
+
+```bash
+npm install
+npm run rebuild
+```
+
+Or just use the one-click launcher (`start.sh` / `start.bat`) which detects this
+automatically.
+
+### `start.sh` says "permission denied"
+
+Make it executable:
+
+```bash
+chmod +x start.sh
+./start.sh
+```
+
+### Terminal screen says "PTY not available"
+
+This is non-fatal. The app falls back to a basic `child_process` shell. To get full
+PTY support, run `npm run rebuild` to compile `node-pty` for Electron.
 
 ---
 

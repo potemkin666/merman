@@ -1,6 +1,11 @@
 @echo off
+setlocal enabledelayedexpansion
 title OpenClaw Harbor - Starting...
 color 1F
+
+REM Always run from the directory this script lives in
+cd /d "%~dp0"
+
 echo.
 echo   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 echo   ~                                          ~
@@ -30,9 +35,27 @@ if %ERRORLEVEL% neq 0 (
 echo   ✅  Node.js found!
 echo.
 
+REM Determine whether we need to install / reinstall dependencies.
+REM Case 1: node_modules does not exist (fresh clone).
+REM Case 2: package.json was modified after node_modules (pulled changes).
+set "NEED_INSTALL=0"
 if not exist "node_modules" (
-    echo   📦  First time? Installing dependencies...
-    echo   ^(This only happens once. Grab a coffee.^)
+    set "NEED_INSTALL=1"
+) else (
+    REM Compare timestamps: if package.json is newer than node_modules dir
+    for %%A in (package.json) do set "PKG_DATE=%%~tA"
+    for %%A in (node_modules) do set "NM_DATE=%%~tA"
+    REM Simple string compare — works for same-format timestamps
+    if "!PKG_DATE!" gtr "!NM_DATE!" set "NEED_INSTALL=1"
+)
+
+if "!NEED_INSTALL!"=="1" (
+    if not exist "node_modules" (
+        echo   📦  First time? Installing dependencies...
+        echo   ^(This only happens once. Grab a coffee.^)
+    ) else (
+        echo   📦  Dependencies may have changed — updating...
+    )
     echo.
     call npm install
     if %ERRORLEVEL% neq 0 (
@@ -47,6 +70,17 @@ if not exist "node_modules" (
     )
     echo.
     echo   ✅  Dependencies installed!
+    echo.
+
+    echo   🔧  Rebuilding native modules for Electron...
+    echo   ^(This makes sure node-pty works correctly.^)
+    echo.
+    call npm run rebuild 2>nul
+    if %ERRORLEVEL% neq 0 (
+        echo   ⚠️  Native rebuild had warnings ^(non-fatal — the app will still work^).
+    )
+    echo.
+    echo   ✅  Rebuild complete!
     echo.
 )
 
