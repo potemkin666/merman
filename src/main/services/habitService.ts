@@ -116,7 +116,7 @@ export function getSuggestion(): HabitSuggestion | null {
 
   // Build suggestion text — find a representative prompt from the most common mode
   const representative = nearby.filter((h) => h.mode === topMode)
-  const lastRepresentative = representative[representative.length - 1]
+  const latestExample = representative[representative.length - 1]
 
   const timeDescription = currentHour < 6 ? 'late at night' :
     currentHour < 12 ? 'in the morning' :
@@ -126,8 +126,8 @@ export function getSuggestion(): HabitSuggestion | null {
   const modeLabel = topMode === 'default' ? 'general' : topMode
 
   let text: string
-  if (lastRepresentative && lastRepresentative.promptSummary.length > 10) {
-    text = `Commander, you usually run ${modeLabel} tasks around this hour ${timeDescription}. Something like "${lastRepresentative.promptSummary}"... Shall I?`
+  if (latestExample && latestExample.promptSummary.length > 10) {
+    text = `Commander, you usually run ${modeLabel} tasks around this hour ${timeDescription}. Something like "${latestExample.promptSummary}"... Shall I?`
   } else {
     text = `Commander, you often dispatch ${modeLabel} tasks around this time ${timeDescription}. Shall I prepare one?`
   }

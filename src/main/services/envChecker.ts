@@ -4,6 +4,9 @@ import { join } from 'path'
 import type { EnvCheckResult } from '../../shared/types'
 import { getConfig } from './configService'
 
+/** The expected directory name for an OpenClaw installation (case-insensitive match). */
+const OPENCLAW_DIR_NAME = 'openclaw'
+
 function checkCommand(name: string, cmd: string, versionFlag = '--version'): Promise<EnvCheckResult> {
   const notFoundResult: EnvCheckResult = {
     name,
@@ -181,7 +184,7 @@ function scanForOpenClawRepo(parentDir: string): string {
   try {
     const entries = readdirSync(parentDir)
     for (const name of entries) {
-      if (name.toLowerCase() !== 'openclaw') continue
+      if (name.toLowerCase() !== OPENCLAW_DIR_NAME) continue
       const candidate = join(parentDir, name)
       try {
         if (!statSync(candidate).isDirectory()) continue
