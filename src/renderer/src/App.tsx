@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { NavSidebar } from './components/NavSidebar'
 import { WelcomeOverlay } from './components/WelcomeOverlay'
 import { ElectronUnavailable } from './components/ElectronUnavailable'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { Harbor } from './screens/Harbor'
 import { SetupWizard } from './screens/SetupWizard'
 import { Dispatch } from './screens/Dispatch'
@@ -78,7 +79,9 @@ function AppContent() {
       {showWelcome && <WelcomeOverlay onDismiss={dismissWelcome} />}
       <NavSidebar active={page} onNavigate={setPage} />
       <main className="app-main">
-        {renderScreen()}
+        <ErrorBoundary key={page}>
+          {renderScreen()}
+        </ErrorBoundary>
       </main>
     </div>
   )
