@@ -286,8 +286,8 @@ export const DeepConfig: React.FC<DeepConfigProps> = ({ config, onSave }) => {
               <option key={m.value} value={m.value}>{m.label}</option>
             ))}
           </select>
-          <Tooltip text="Add a new custom preset. Pick a name and a mode, then click +.">
-            <button onClick={addPreset} aria-label="Add new preset" className="deep-config__add-btn">
+          <Tooltip text={!newPreset.name || !newPreset.mode ? 'Enter a name and select a mode first.' : 'Add a new custom preset.'}>
+            <button onClick={addPreset} disabled={!newPreset.name || !newPreset.mode} aria-label="Add new preset" className="deep-config__add-btn" style={{ opacity: !newPreset.name || !newPreset.mode ? 0.5 : 1, cursor: !newPreset.name || !newPreset.mode ? 'not-allowed' : 'pointer' }}>
               + Add
             </button>
           </Tooltip>
