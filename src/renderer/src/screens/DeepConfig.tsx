@@ -286,11 +286,16 @@ export const DeepConfig: React.FC<DeepConfigProps> = ({ config, onSave }) => {
               <option key={m.value} value={m.value}>{m.label}</option>
             ))}
           </select>
-          <Tooltip text={!newPreset.name || !newPreset.mode ? 'Enter a name and select a mode first.' : 'Add a new custom preset.'}>
-            <button onClick={addPreset} disabled={!newPreset.name || !newPreset.mode} aria-label="Add new preset" className="deep-config__add-btn" style={{ opacity: !newPreset.name || !newPreset.mode ? 0.5 : 1, cursor: !newPreset.name || !newPreset.mode ? 'not-allowed' : 'pointer' }}>
-              + Add
-            </button>
-          </Tooltip>
+          {(() => {
+            const canAdd = Boolean(newPreset.name && newPreset.mode)
+            return (
+              <Tooltip text={canAdd ? 'Add a new custom preset.' : 'Enter a name and select a mode first.'}>
+                <button onClick={addPreset} disabled={!canAdd} aria-label="Add new preset" className="deep-config__add-btn" style={{ opacity: canAdd ? 1 : 0.5, cursor: canAdd ? 'pointer' : 'not-allowed' }}>
+                  + Add
+                </button>
+              </Tooltip>
+            )
+          })()}
         </div>
       </section>
 

@@ -142,7 +142,7 @@ ipcMain.handle(IPC_CHANNELS.EXPORT_LOGS, async () => {
   if (!mainWindow) return { ok: false, error: 'No window available.' }
   const result = await dialog.showSaveDialog(mainWindow, {
     title: 'Export Tide Log',
-    defaultPath: `tide-log-${new Date().toISOString().slice(0, 10)}.txt`,
+    defaultPath: `tide-log-${new Date().toISOString().slice(0, 10)}.txt`, // YYYY-MM-DD
     filters: [{ name: 'Text Files', extensions: ['txt'] }],
   })
   if (result.canceled || !result.filePath) return { ok: false, error: 'Export cancelled.' }
