@@ -3,24 +3,22 @@ import type { EmissaryAnimation, EmissaryEmotion } from '../screens/fishtank-lib
 import { ANIMATION_LABELS } from '../screens/fishtank-lib'
 import type { ServiceStatus } from '../../../shared/types'
 
-import laughingImg from '../assets/emissary/laughing.png'
-import wavingImg from '../assets/emissary/waving.png'
-import cryingImg from '../assets/emissary/crying.png'
-import smugImg from '../assets/emissary/smug.png'
-import thinkingImg from '../assets/emissary/thinking.png'
-import flexingImg from '../assets/emissary/flexing.png'
-import excitedImg from '../assets/emissary/excited.png'
-import distressedImg from '../assets/emissary/distressed.png'
+// Dynamically import all portrait PNGs from the emissary assets folder.
+// Vite resolves these at build time — no manual list needed as portraits grow.
+const _emotionModules = import.meta.glob('../assets/emissary/*.png', {
+  eager: true,
+  import: 'default',
+}) as Record<string, string>
 
-const EMOTION_IMAGES: Record<EmissaryEmotion, string> = {
-  laughing: laughingImg,
-  waving: wavingImg,
-  crying: cryingImg,
-  smug: smugImg,
-  thinking: thinkingImg,
-  flexing: flexingImg,
-  excited: excitedImg,
-  distressed: distressedImg,
+const EMOTION_IMAGES: Record<string, string> = Object.fromEntries(
+  Object.entries(_emotionModules).map(([path, url]) => {
+    const key = path.split('/').pop()!.replace('.png', '')
+    return [key, url]
+  }),
+)
+
+function getEmotionImage(emotion: EmissaryEmotion): string {
+  return EMOTION_IMAGES[emotion] ?? EMOTION_IMAGES['idle'] ?? ''
 }
 
 interface EmissaryFigureProps {
@@ -42,7 +40,7 @@ export const EmissaryFigure: React.FC<EmissaryFigureProps> = ({
   onClick,
   onKeyDown,
 }) => {
-  const src = EMOTION_IMAGES[emotion]
+  const src = getEmotionImage(emotion)
   const haloGlow = status === 'running'
     ? '0 0 60px rgba(0,200,212,0.35), 0 0 120px rgba(0,200,212,0.15)'
     : '0 0 30px rgba(0,200,212,0.18), 0 0 60px rgba(0,200,212,0.07)'

@@ -13,7 +13,6 @@
     "dist:mac": "electron-vite build && electron-builder --mac",
     "dist:win": "electron-vite build && electron-builder --win",
     "dist:linux": "electron-vite build && electron-builder --linux",
-    "fetch:art": "bash scripts/fetch-emissary-art.sh",
     "rebuild": "electron-rebuild",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
